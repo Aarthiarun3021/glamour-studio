@@ -1,0 +1,6 @@
+{
+  "appId": "com.glamourstudio.app",
+  "appName": "Glamour Studio",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
