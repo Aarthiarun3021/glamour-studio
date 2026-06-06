@@ -1354,333 +1354,198 @@ const sendWhatsAppReminder = (b) => {
 
 const generateInvoice = (b, packages, settings) => {
         const pkg = packages.find(p => p.id === Number(b.packageId));
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
-
-        const primary = '#4a3040';
-        const secondary = '#6b6b80';
-
-        // Calculate totals including extra items
         const qty = Number(b.quantity) || 1;
         const extras = (b.extraItems || []);
         const extraTotal = extras.reduce((s, ei) => s + (ei.price * (ei.qty || 1)), 0);
-        const rentTotal = (pkg?.price || 0) * qty + extraTotal;
-        const deposit = pkg?.deposit || 0;
-        const advance = Number(b.advancePaid) || 0;
-        const amountPaid = Number(b.amountPaid) || 0;
-        const balance = rentTotal + deposit - advance - amountPaid;
+        const isJewellery = pkg?.type === 'jewellery';
+        const bizName = settings?.businessName || 'Aarthi Helen\'s';
+        const today = new Date().toLocaleDateString('en-IN');
 
-        if (pkg?.type === 'jewellery') {
-          // Jewellery Rental Invoice
-          doc.setDrawColor(70, 50, 90);
-          doc.setLineWidth(0.8);
-          doc.rect(8, 8, 194, 282);
-          doc.setDrawColor(70, 50, 90);
-          doc.setLineWidth(0.3);
-          doc.rect(10, 10, 190, 278);
+        let html = '';
 
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(24);
-          doc.setTextColor(30, 30, 60);
-          const bizName = settings?.businessName || 'Aarthi Helen\'s';
-          doc.text(bizName.toUpperCase(), 105, 28, { align: 'center' });
+        if (isJewellery) {
+          const rentTotal = (pkg?.price || 0) * qty + extraTotal;
+          const deposit = pkg?.deposit || 0;
+          const advance = Number(b.advancePaid) || 0;
+          const amountPaid = Number(b.amountPaid) || 0;
+          const balance = rentTotal + deposit - advance - amountPaid;
 
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(11);
-          doc.setTextColor(50, 50, 80);
-          doc.text('MAKEOVER & RENTAL JEWELLERY', 105, 36, { align: 'center' });
-
-          doc.setDrawColor(70, 50, 90);
-          doc.setLineWidth(0.3);
-          doc.line(20, 42, 190, 42);
-
-          doc.setFontSize(9);
-          doc.setTextColor(50, 50, 80);
-          const contacts = [];
-          if (settings?.phone) contacts.push(`Mobile: ${settings.phone}`);
-          if (settings?.address) contacts.push(`Address: ${settings.address}`);
-          if (settings?.instagram) contacts.push(`Instagram: ${settings.instagram}`);
-          if (contacts.length === 0) {
-            contacts.push('Mobile: 7539969774');
-            contacts.push('Address: Cithambaram Nagar, Kottar, Nagercoil — 629002');
-            contacts.push('Instagram: aarthihelen_rental_jewellery');
-          }
-          let contactY = 50;
-          contacts.forEach(line => {
-            doc.text(line, 105, contactY, { align: 'center' });
-            contactY += 5;
-          });
-
-          doc.setDrawColor(70, 50, 90);
-          doc.setLineWidth(0.2);
-          for (let x = 20; x < 190; x += 3) {
-            doc.line(x, contactY + 2, x + 1.5, contactY + 2);
-          }
-
-          const formStartY = contactY + 10;
-          doc.setFontSize(10);
-          doc.setTextColor(30, 30, 60);
-          doc.setFont('helvetica', 'normal');
-          doc.text(`No. :  INV-${b.id}`, 20, formStartY);
-          doc.text(`Date :  ${new Date().toLocaleDateString('en-IN')}`, 140, formStartY);
-
-          doc.setFontSize(10);
-          const labelX = 20;
-          const lineX = 60;
-          const lineEnd = 190;
-
-          const drawLabelLine = (label, value, y) => {
-            doc.setFont('helvetica', 'bold');
-            doc.text(label, labelX, y);
-            doc.setFont('helvetica', 'normal');
-            if (value) doc.text(value, lineX, y);
-            doc.setDrawColor(70, 50, 90);
-            doc.setLineWidth(0.2);
-            doc.line(lineX, y + 1, lineEnd, y + 1);
-          };
-
-          let lineY = formStartY + 12;
-          drawLabelLine('Name :', b.clientName, lineY);
-          lineY += 10;
-          drawLabelLine('Address :', b.address || '', lineY);
-          lineY += 8;
-          drawLabelLine('', '', lineY);
-          lineY += 8;
-          drawLabelLine('', '', lineY);
-          lineY += 10;
-          drawLabelLine('Mobile :', b.phone || '', lineY);
-
-          const tableY = lineY + 14;
-          doc.setFillColor(245, 245, 250);
-          doc.rect(20, tableY, 170, 10, 'F');
-          doc.setDrawColor(70, 50, 90);
-          doc.setLineWidth(0.3);
-          doc.rect(20, tableY, 170, 10, 'S');
-
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(10);
-          doc.setTextColor(30, 30, 60);
-          doc.text('Particulars', 75, tableY + 7, { align: 'center' });
-          doc.text('Qty.', 140, tableY + 7, { align: 'center' });
-          doc.text('Amount', 170, tableY + 7, { align: 'center' });
-
-          doc.line(130, tableY, 130, tableY + 80);
-          doc.line(150, tableY, 150, tableY + 80);
-          doc.rect(20, tableY, 170, 80, 'S');
-
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(9);
-          doc.setTextColor(30, 30, 60);
-
-          // Main item
-          let rowY = tableY + 18;
-          doc.text(pkg?.name || 'Jewellery Item', 25, rowY);
-          if (pkg?.description) {
-            const descLines = doc.splitTextToSize(pkg.description, 100);
-            doc.text(descLines, 25, rowY + 7);
-          }
-          doc.text(String(qty), 140, rowY, { align: 'center' });
-          doc.text(`Rs. ${((pkg?.price || 0) * qty).toLocaleString('en-IN')}`, 170, rowY, { align: 'center' });
-
-          // Extra items
-          extras.forEach((ei, i) => {
-            rowY += 10;
-            doc.text(`+ ${ei.name}`, 25, rowY);
-            doc.text(String(ei.qty || 1), 140, rowY, { align: 'center' });
-            doc.text(`Rs. ${(ei.price * (ei.qty || 1)).toLocaleString('en-IN')}`, 170, rowY, { align: 'center' });
-          });
-
-
-
-          const totalsY = tableY + 86;
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(10);
-          doc.setTextColor(30, 30, 60);
-
-          doc.text('Total Rent  :', 130, totalsY);
-          doc.text(`Rs. ${rentTotal.toLocaleString('en-IN')}`, 185, totalsY, { align: 'center' });
-          doc.text('Deposit     :', 130, totalsY + 8);
-          doc.text(`Rs. ${deposit.toLocaleString('en-IN')}`, 185, totalsY + 8, { align: 'center' });
-          doc.text('Advance     :', 130, totalsY + 16);
-          doc.text(`Rs. ${advance.toLocaleString('en-IN')}`, 185, totalsY + 16, { align: 'center' });
-          doc.text('Paid So Far :', 130, totalsY + 24);
-          doc.text(`Rs. ${amountPaid.toLocaleString('en-IN')}`, 185, totalsY + 24, { align: 'center' });
-          doc.setFontSize(11);
-          doc.text('Balance     :', 130, totalsY + 34);
-          doc.text(`Rs. ${balance.toLocaleString('en-IN')}`, 185, totalsY + 34, { align: 'center' });
-
-          doc.setFontSize(9);
-          doc.setTextColor(100, 100, 120);
-          doc.text('(Deposit to be refunded', 130, totalsY + 40, { align: 'left' });
-          doc.text(`at return = Rs. ${deposit.toLocaleString('en-IN')})`, 130, totalsY + 46, { align: 'left' });
-          doc.setTextColor(30, 30, 60);
-
-          const datesY = totalsY + 54;
-          doc.setDrawColor(70, 50, 90);
-          doc.setLineWidth(0.3);
-          doc.rect(20, datesY, 170, 14, 'S');
-          doc.line(70, datesY, 70, datesY + 14);
-          doc.line(130, datesY, 130, datesY + 14);
-
-          doc.setFontSize(9);
-          doc.text(`Booking Date :  ${b.date || ''}`, 25, datesY + 9);
-          doc.text(`Receiving Date :  ${b.receivingDate || ''}`, 75, datesY + 9);
-          doc.text(`Returning Date :  ${b.returningDate || ''}`, 135, datesY + 9);
-
-          const sigY = datesY + 28;
-          doc.setFontSize(10);
-          doc.text('Customer Signature', 55, sigY + 15, { align: 'center' });
-          doc.text('Authorized Signature', 155, sigY + 15, { align: 'center' });
-
-          doc.setDrawColor(70, 50, 90);
-          doc.setLineWidth(0.2);
-          doc.line(20, sigY, 100, sigY);
-          doc.line(110, sigY, 190, sigY);
-
-          doc.setFontSize(8);
-          doc.setTextColor(80, 80, 100);
-          doc.text('No Exchange & No Cancellation for Rental Booking.', 20, sigY + 28);
-          doc.text('In case of damage / returning jewels later than the mentioned date, charges will be applicable.', 20, sigY + 34);
-
-          doc.save(`Jewellery-Invoice-${b.clientName}-${b.date}.pdf`);
-          return;
-        }
-
-        // Makeup invoice
-        doc.setFillColor(243, 235, 239);
-        doc.rect(0, 0, 210, 40, 'F');
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(22);
-        doc.setTextColor(primary);
-        doc.text(settings?.businessName || 'Glamour Studio', 105, 22, { align: 'center' });
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(11);
-        doc.setTextColor(secondary);
-        doc.text('Makeup Artist — Invoice', 105, 30, { align: 'center' });
-
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(15, 48, 180, 28, 3, 3, 'F');
-        doc.setDrawColor(232, 217, 224);
-        doc.setLineWidth(0.3);
-        doc.roundedRect(15, 48, 180, 28, 3, 3, 'S');
-
-        doc.setFontSize(10);
-        doc.setTextColor(secondary);
-        doc.text('Invoice #:', 22, 58);
-        doc.text('Date:', 22, 66);
-        doc.setTextColor(primary);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`INV-${b.id}`, 55, 58);
-        doc.text(new Date().toLocaleDateString('en-IN'), 55, 66);
-
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(secondary);
-        doc.text('Booking Date:', 120, 58);
-        doc.text('Status:', 120, 66);
-        doc.setTextColor(primary);
-        doc.setFont('helvetica', 'bold');
-        doc.text(b.date, 155, 58);
-        doc.text(b.status.toUpperCase(), 155, 66);
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.setTextColor(primary);
-        doc.text('Billed To', 15, 90);
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(secondary);
-        doc.text(b.clientName, 15, 98);
-        if (b.phone) doc.text(b.phone, 15, 104);
-        if (b.email) doc.text(b.email, 15, 110);
-
-        // Table with clean borders
-        const startY = 122;
-        const tableH = 70 + (extras.length * 8);
-        doc.setFillColor(250, 248, 249);
-        doc.rect(15, startY, 180, 10, 'F');
-        doc.setDrawColor(200, 185, 190);
-        doc.setLineWidth(0.3);
-        doc.rect(15, startY, 180, 10, 'S');
-        doc.line(90, startY, 90, startY + tableH);
-        doc.line(145, startY, 145, startY + tableH);
-        doc.rect(15, startY, 180, tableH, 'S');
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(primary);
-        doc.text('Item', 22, startY + 7);
-        doc.text('Description', 95, startY + 7);
-        doc.text('Price', 182, startY + 7, { align: 'right' });
-
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(secondary);
-        doc.setFontSize(10);
-        const pkgName = pkg?.name || 'Custom Package';
-        const pkgDesc = pkg?.description || '-';
-        const pkgPrice = pkg ? `Rs. ${pkg.price.toLocaleString('en-IN')}` : 'Rs. 0';
-
-        let rowY = startY + 22;
-        doc.setTextColor(primary);
-        doc.setFont('helvetica', 'bold');
-        doc.text(pkgName, 22, rowY);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(secondary);
-        const splitDesc = doc.splitTextToSize(pkgDesc, 50);
-        doc.text(splitDesc, 95, rowY);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(primary);
-        doc.text(pkgPrice, 190, rowY, { align: 'right' });
-
-        // Extra items for makeup
-        if (extras.length > 0) {
-          rowY += 14;
+          let extraRows = '';
           extras.forEach(ei => {
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(secondary);
-            doc.text(`+ ${ei.name} x${ei.qty || 1}`, 22, rowY);
-            doc.text('-', 95, rowY);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(primary);
-            doc.text(`Rs. ${(ei.price * (ei.qty || 1)).toLocaleString('en-IN')}`, 190, rowY, { align: 'right' });
-            rowY += 10;
+            extraRows += `<tr><td style="padding:6px 12px;border-bottom:1px solid #eee;">+ ${ei.name}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:center;">${ei.qty || 1}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:right;">Rs. ${(ei.price * (ei.qty || 1)).toLocaleString('en-IN')}</td></tr>`;
           });
+
+          html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#f5f0f2;color:#3a2e38;max-width:600px;margin:0 auto}
+.invoice-card{background:#fff;border:2px solid #8b5b6e;border-radius:12px;padding:24px;margin-bottom:20px}
+.header{text-align:center;border-bottom:2px solid #d4b8c8;padding-bottom:16px;margin-bottom:20px}
+.header h1{color:#4a3040;font-size:28px;margin:0 0 4px}
+.header p{color:#6b4656;margin:0;font-size:14px}
+.contacts{text-align:center;font-size:13px;color:#6b4656;margin-bottom:12px}
+.details{background:#faf8f3;padding:16px;border-radius:8px;margin-bottom:20px}
+.details p{margin:6px 0;font-size:14px}
+.details strong{color:#4a3040}
+table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px}
+th{background:#f5f0f2;color:#4a3040;padding:10px 12px;text-align:left;border-bottom:2px solid #d4b8c8}
+td{padding:10px 12px;border-bottom:1px solid #eee}
+.totals{text-align:right;font-size:15px}
+.totals p{margin:6px 0}
+.totals .balance{font-size:20px;font-weight:bold;color:#4a3040;margin-top:12px;border-top:2px solid #d4b8c8;padding-top:8px}
+.dates{background:#faf8f3;padding:12px;border-radius:8px;margin-bottom:20px;font-size:13px}
+.dates p{margin:4px 0}
+.signatures{display:flex;justify-content:space-between;margin-top:30px;font-size:13px}
+.signature{width:40%;border-top:1px solid #8b5b6e;padding-top:8px;text-align:center}
+.footer{font-size:11px;color:#6b4656;text-align:center;margin-top:20px}
+.print-btn{display:block;width:100%;padding:14px;background:#6b4656;color:#e8d5b0;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:20px}
+@media print{.print-btn{display:none}}
+</style></head>
+<body>
+<button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+<div class="invoice-card">
+  <div class="header">
+    <h1>${bizName.toUpperCase()}</h1>
+    <p>MAKEOVER & RENTAL JEWELLERY</p>
+  </div>
+  <div class="contacts">
+    ${settings?.phone ? `Mobile: ${settings.phone}<br>` : ''}
+    ${settings?.address ? `Address: ${settings.address}<br>` : ''}
+    ${settings?.instagram ? `Instagram: ${settings.instagram}<br>` : ''}
+  </div>
+  <div class="details">
+    <p><strong>Invoice No:</strong> INV-${b.id}</p>
+    <p><strong>Date:</strong> ${today}</p>
+    <p><strong>Name:</strong> ${b.clientName}</p>
+    <p><strong>Mobile:</strong> ${b.phone || '-'}</p>
+    <p><strong>Address:</strong> ${b.address || '-'}</p>
+  </div>
+  <table>
+    <tr><th>Particulars</th><th style="text-align:center">Qty</th><th style="text-align:right">Amount</th></tr>
+    <tr><td>${pkg?.name || 'Jewellery Item'}<br><small style="color:#6b4656">${pkg?.description || ''}</small></td><td style="text-align:center">${qty}</td><td style="text-align:right">Rs. ${((pkg?.price || 0) * qty).toLocaleString('en-IN')}</td></tr>
+    ${extraRows}
+  </table>
+  <div class="totals">
+    <p>Total Rent: <strong>Rs. ${rentTotal.toLocaleString('en-IN')}</strong></p>
+    <p>Deposit: <strong>Rs. ${deposit.toLocaleString('en-IN')}</strong></p>
+    <p>Advance: <strong>Rs. ${advance.toLocaleString('en-IN')}</strong></p>
+    <p>Paid So Far: <strong>Rs. ${amountPaid.toLocaleString('en-IN')}</strong></p>
+    <p class="balance">Balance: Rs. ${balance.toLocaleString('en-IN')}</p>
+    <p style="font-size:12px;color:#6b4656">(Deposit to be refunded at return = Rs. ${deposit.toLocaleString('en-IN')})</p>
+  </div>
+  <div class="dates">
+    <p><strong>Booking Date:</strong> ${b.date || '-'}</p>
+    <p><strong>Receiving Date:</strong> ${b.receivingDate || '-'}</p>
+    <p><strong>Returning Date:</strong> ${b.returningDate || '-'}</p>
+  </div>
+  <div class="signatures">
+    <div class="signature">Customer Signature</div>
+    <div class="signature">Authorized Signature</div>
+  </div>
+  <div class="footer">
+    <p>No Exchange & No Cancellation for Rental Booking.</p>
+    <p>In case of damage / returning jewels later than the mentioned date, charges will be applicable.</p>
+  </div>
+</div>
+</body></html>`;
+        } else {
+          const totalMakeup = (pkg?.price || 0) + extraTotal;
+
+          let extraRows = '';
+          extras.forEach(ei => {
+            extraRows += `<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;">+ ${ei.name}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center">${ei.qty || 1}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">Rs. ${(ei.price * (ei.qty || 1)).toLocaleString('en-IN')}</td></tr>`;
+          });
+
+          let paymentInfo = '';
+          if (b.paymentStatus) {
+            paymentInfo = `<p style="text-align:center;color:#6b4656;font-size:13px;margin-top:8px">Payment: ${PAYMENT_STATUS[b.paymentStatus] || b.paymentStatus} | Paid Rs. ${(b.amountPaid || 0).toLocaleString('en-IN')} via ${b.paidVia || 'cash'}</p>`;
+          }
+
+          let contactFooter = '';
+          const contactParts = [];
+          if (settings?.phone) contactParts.push(settings.phone);
+          if (settings?.email) contactParts.push(settings.email);
+          if (contactParts.length > 0) {
+            contactFooter = `<p style="font-size:12px;color:#6b4656;margin:4px 0">${contactParts.join('  •  ')}</p>`;
+          }
+
+          html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#f5f0f2;color:#3a2e38;max-width:600px;margin:0 auto}
+.invoice-card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.header{background:#f3ebef;padding:20px;border-radius:12px 12px 0 0;margin:-24px -24px 20px -24px;text-align:center}
+.header h1{color:#4a3040;font-size:24px;margin:0 0 4px}
+.header p{color:#6b4656;margin:0;font-size:13px}
+.details{background:#fff;border:1px solid #e8d5dc;border-radius:8px;padding:16px;margin-bottom:20px;display:flex;gap:24px;flex-wrap:wrap}
+.details-col{flex:1;min-width:140px}
+.details-col p{margin:4px 0;font-size:13px;color:#6b4656}
+.details-col strong{color:#4a3040;font-size:14px}
+.billed-to{background:#faf8f3;padding:12px 16px;border-radius:8px;margin-bottom:20px}
+.billed-to h3{color:#4a3040;font-size:16px;margin:0 0 8px}
+.billed-to p{margin:4px 0;font-size:14px;color:#6b4656}
+table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px}
+th{background:#f5f0f2;color:#4a3040;padding:10px 12px;text-align:left;border-bottom:2px solid #d4b8c8}
+td{padding:10px 12px;border-bottom:1px solid #eee}
+.total-row{text-align:right;font-size:16px;font-weight:bold;color:#4a3040;border-top:2px solid #d4b8c8;padding-top:12px}
+.footer{background:#f3ebef;padding:16px;border-radius:0 0 12px 12px;margin:20px -24px -24px -24px;text-align:center}
+.footer p{margin:4px 0;font-size:12px;color:#6b4656}
+.print-btn{display:block;width:100%;padding:14px;background:#6b4656;color:#e8d5b0;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:20px}
+@media print{.print-btn{display:none}}
+</style></head>
+<body>
+<button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+<div class="invoice-card">
+  <div class="header">
+    <h1>${bizName}</h1>
+    <p>Makeup Artist — Invoice</p>
+  </div>
+  <div class="details">
+    <div class="details-col">
+      <p>Invoice #</p><strong>INV-${b.id}</strong>
+      <p>Date</p><strong>${today}</strong>
+    </div>
+    <div class="details-col">
+      <p>Booking Date</p><strong>${b.date}</strong>
+      <p>Status</p><strong>${b.status.toUpperCase()}</strong>
+    </div>
+  </div>
+  <div class="billed-to">
+    <h3>Billed To</h3>
+    <p><strong>${b.clientName}</strong></p>
+    ${b.phone ? `<p>${b.phone}</p>` : ''}
+    ${b.email ? `<p>${b.email}</p>` : ''}
+  </div>
+  <table>
+    <tr><th>Item</th><th style="text-align:center">Description</th><th style="text-align:right">Price</th></tr>
+    <tr><td><strong>${pkg?.name || 'Custom Package'}</strong></td><td style="text-align:center">${pkg?.description || '-'}</td><td style="text-align:right"><strong>Rs. ${pkg?.price?.toLocaleString('en-IN') || '0'}</strong></td></tr>
+    ${extraRows}
+  </table>
+  <div class="total-row">
+    Total: Rs. ${totalMakeup.toLocaleString('en-IN')}
+  </div>
+  ${paymentInfo}
+  <div class="footer">
+    <p>Thank you for your business!</p>
+    ${contactFooter}
+    <p>${bizName}</p>
+  </div>
+</div>
+</body></html>`;
         }
 
-        const totalY = startY + tableH + 6;
-        doc.setDrawColor(232, 217, 224);
-        doc.setLineWidth(0.5);
-        doc.line(120, totalY, 195, totalY);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.setTextColor(primary);
-        const totalMakeup = (pkg?.price || 0) + extraTotal;
-        doc.text('Total', 130, totalY + 8);
-        doc.text(`Rs. ${totalMakeup.toLocaleString('en-IN')}`, 195, totalY + 8, { align: 'right' });
-
-        if (b.paymentStatus) {
-          doc.setFontSize(9);
-          doc.setTextColor(100, 100, 120);
-          doc.text(`Payment: ${PAYMENT_STATUS[b.paymentStatus] || b.paymentStatus} | Paid Rs. ${(b.amountPaid || 0).toLocaleString('en-IN')} via ${b.paidVia || 'cash'}`, 105, totalY + 18, { align: 'center' });
+        const w = window.open('', '_blank');
+        if (w) {
+          w.document.write(html);
+          w.document.close();
+        } else {
+          alert('Popup blocked. Please allow popups for this site to view the invoice.');
         }
 
-        doc.setFillColor(243, 235, 239);
-        doc.rect(0, 270, 210, 27, 'F');
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.setTextColor(secondary);
-        doc.text('Thank you for your business!', 105, 278, { align: 'center' });
-        const contactParts = [];
-        if (settings?.phone) contactParts.push(settings.phone);
-        if (settings?.email) contactParts.push(settings.email);
-        if (contactParts.length > 0) {
-          doc.text(contactParts.join('  •  '), 105, 284, { align: 'center' });
-        }
-        doc.text(settings?.businessName || 'Glamour Studio', 105, 290, { align: 'center' });
-
-        doc.save(`Makeup-Invoice-${b.clientName}-${b.date}.pdf`);
       };
 
       const calendarDays = [];
