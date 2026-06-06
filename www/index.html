@@ -282,7 +282,45 @@
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="login-screen" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#6b4656 0%,#4a3040 50%,#3a2030 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;font-family:'Jost',sans-serif;transition:opacity 0.4s ease;">
+  <div style="width:100%;max-width:360px;background:#fff;border-radius:24px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;">
+    <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#6b4656,#4a3040);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:36px;font-weight:700;color:#e8d5b0;font-family:'Jost',sans-serif;">A</div>
+    <h2 style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:#4a3040;margin:0 0 4px;">Aarthi Makeover</h2>
+    <p style="font-size:13px;color:#6b4656;margin:0 0 24px;">Makeup & Rental Jewellery</p>
+    
+    <div id="login-step-1">
+      <p style="font-size:14px;color:#3a2e38;margin-bottom:16px;text-align:left;font-weight:500;">Enter your mobile number to continue</p>
+      <div style="display:flex;align-items:center;border:2px solid #d4b8c8;border-radius:12px;overflow:hidden;margin-bottom:16px;">
+        <span style="padding:12px 16px;background:#f3ebef;color:#4a3040;font-weight:600;font-size:14px;border-right:2px solid #d4b8c8;">+91</span>
+        <input type="tel" id="mobile-input" placeholder="98765 43210" maxlength="10" style="flex:1;border:none;outline:none;padding:12px 16px;font-size:16px;font-family:'Jost',sans-serif;background:transparent;" onkeypress="if(event.key==='Enter')sendOTP()" />
+      </div>
+      <button onclick="sendOTP()" style="width:100%;padding:14px;background:linear-gradient(135deg,#6b4656,#4a3040);color:#e8d5b0;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.3s;font-family:'Jost',sans-serif;">Send OTP</button>
+    </div>
+    
+    <div id="login-step-2" style="display:none;">
+      <p style="font-size:14px;color:#3a2e38;margin-bottom:8px;text-align:left;font-weight:500;">Enter 6-digit OTP</p>
+      <p style="font-size:12px;color:#6b4656;margin-bottom:16px;text-align:left;">Sent to +91 <span id="otp-phone"></span></p>
+      <div id="otp-boxes" style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;">
+        <input type="text" class="otp-box" maxlength="1" style="width:44px;height:52px;border:2px solid #d4b8c8;border-radius:12px;text-align:center;font-size:20px;font-weight:700;color:#4a3040;outline:none;font-family:'Jost',sans-serif;" />
+        <input type="text" class="otp-box" maxlength="1" style="width:44px;height:52px;border:2px solid #d4b8c8;border-radius:12px;text-align:center;font-size:20px;font-weight:700;color:#4a3040;outline:none;font-family:'Jost',sans-serif;" />
+        <input type="text" class="otp-box" maxlength="1" style="width:44px;height:52px;border:2px solid #d4b8c8;border-radius:12px;text-align:center;font-size:20px;font-weight:700;color:#4a3040;outline:none;font-family:'Jost',sans-serif;" />
+        <input type="text" class="otp-box" maxlength="1" style="width:44px;height:52px;border:2px solid #d4b8c8;border-radius:12px;text-align:center;font-size:20px;font-weight:700;color:#4a3040;outline:none;font-family:'Jost',sans-serif;" />
+        <input type="text" class="otp-box" maxlength="1" style="width:44px;height:52px;border:2px solid #d4b8c8;border-radius:12px;text-align:center;font-size:20px;font-weight:700;color:#4a3040;outline:none;font-family:'Jost',sans-serif;" />
+        <input type="text" class="otp-box" maxlength="1" style="width:44px;height:52px;border:2px solid #d4b8c8;border-radius:12px;text-align:center;font-size:20px;font-weight:700;color:#4a3040;outline:none;font-family:'Jost',sans-serif;" />
+      </div>
+      <button onclick="verifyOTP()" style="width:100%;padding:14px;background:linear-gradient(135deg,#6b4656,#4a3040);color:#e8d5b0;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.3s;font-family:'Jost',sans-serif;">Verify & Login</button>
+      <p style="font-size:13px;color:#6b4656;margin-top:12px;cursor:pointer;text-decoration:underline;" onclick="resendOTP()">Resend OTP</p>
+    </div>
+    
+    <div id="login-step-3" style="display:none;">
+      <div style="width:60px;height:60px;border-radius:50%;background:#4a3040;color:#e8d5b0;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;margin:0 auto 12px;">A</div>
+      <p style="font-size:16px;color:#4a3040;font-weight:600;margin:0;">Welcome!</p>
+      <p style="font-size:13px;color:#6b4656;margin:4px 0 16px;">Logged in as <span id="logged-phone"></span></p>
+      <button onclick="logout()" style="padding:10px 24px;background:#f3ebef;color:#4a3040;border:2px solid #d4b8c8;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Jost',sans-serif;">Logout</button>
+    </div>
+  </div>
+</div>
+  <div id="root" style="display:none;"></div>
 
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
@@ -2871,5 +2909,102 @@ const generateInvoice = (b) => {
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
+<script>
+let generatedOTP = '';
+let userPhone = '';
+
+function checkLogin() {
+  const user = localStorage.getItem('aarthi_user');
+  if (user) {
+    const data = JSON.parse(user);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('root').style.display = 'block';
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('root').style.display = 'none';
+  }
+}
+
+function sendOTP() {
+  const phone = document.getElementById('mobile-input').value.replace(/\D/g, '');
+  if (phone.length !== 10) {
+    alert('Please enter a valid 10-digit mobile number');
+    return;
+  }
+  userPhone = phone;
+  generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+  document.getElementById('otp-phone').textContent = phone;
+  document.getElementById('login-step-1').style.display = 'none';
+  document.getElementById('login-step-2').style.display = 'block';
+  setTimeout(() => {
+    alert('Your OTP is: ' + generatedOTP + '\n\n(Real apps send this via SMS. This is a demo.)');
+  }, 400);
+  setupOTPBoxes();
+}
+
+function resendOTP() {
+  generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+  setTimeout(() => {
+    alert('New OTP: ' + generatedOTP);
+  }, 400);
+}
+
+function setupOTPBoxes() {
+  const boxes = document.getElementById('otp-boxes').querySelectorAll('.otp-box');
+  boxes.forEach((box, i) => {
+    box.value = '';
+    box.oninput = function() {
+      if (this.value.length === 1 && i < boxes.length - 1) {
+        boxes[i + 1].focus();
+      }
+      if (this.value.length === 1 && i === boxes.length - 1) {
+        verifyOTP();
+      }
+    };
+    box.onkeydown = function(e) {
+      if (e.key === 'Backspace' && this.value === '' && i > 0) {
+        boxes[i - 1].focus();
+      }
+    };
+    box.onfocus = function() { this.select(); };
+  });
+  boxes[0].focus();
+}
+
+function verifyOTP() {
+  const boxes = document.getElementById('otp-boxes').querySelectorAll('.otp-box');
+  const entered = Array.from(boxes).map(b => b.value).join('');
+  if (entered === generatedOTP) {
+    localStorage.setItem('aarthi_user', JSON.stringify({ phone: userPhone, loggedIn: Date.now() }));
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('root').style.display = 'block';
+  } else {
+    alert('Invalid OTP. Please try again.');
+    boxes.forEach(b => b.value = '');
+    boxes[0].focus();
+  }
+}
+
+function logout() {
+  if (confirm('Logout? Your data stays on this device.')) {
+    localStorage.removeItem('aarthi_user');
+    location.reload();
+  }
+}
+
+// Add logout button to settings page by checking periodically
+function injectLogout() {
+  const settingsEl = document.querySelector('[data-view="settings"]') || document.querySelector('[class*="Settings"]');
+  if (settingsEl && !settingsEl.querySelector('.aarthi-logout-btn')) {
+    const logoutDiv = document.createElement('div');
+    logoutDiv.className = 'p-4 border-t border-mauve-100 mt-4 aarthi-logout-btn';
+    logoutDiv.innerHTML = '<button onclick="logout()" style="width:100%;padding:12px;background:#f3ebef;color:#4a3040;border:2px solid #d4b8c8;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Jost',sans-serif;">Logout</button>';
+    settingsEl.appendChild(logoutDiv);
+  }
+}
+setInterval(injectLogout, 2000);
+
+checkLogin();
+</script>
 </body>
 </html>
