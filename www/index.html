@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aarthi Makeover</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script>if (typeof React === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"><\/script>'); }</script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script>if (typeof ReactDOM === 'undefined') { document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"><\/script>'); }</script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -326,35 +328,19 @@
 (function() {
   var generatedOTP = '';
   var userPhone = '';
-  var logoutBtnAdded = false;
 
   function checkLogin() {
     var user = localStorage.getItem('aarthi_user');
     var loginScreen = document.getElementById('login-screen');
     var root = document.getElementById('root');
     if (!loginScreen || !root) return;
-
     if (user) {
-      // Already logged in: hide login, show app immediately
       loginScreen.style.display = 'none';
       root.style.display = 'block';
-      addFixedLogoutButton();
     } else {
-      // Not logged in: show login screen
       loginScreen.style.display = 'flex';
       root.style.display = 'none';
     }
-  }
-
-  function addFixedLogoutButton() {
-    if (logoutBtnAdded) return;
-    var btn = document.createElement('button');
-    btn.id = 'aarthi-logout-fixed';
-    btn.textContent = 'Logout';
-    btn.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:50;padding:10px 20px;background:#f3ebef;color:#4a3040;border:2px solid #d4b8c8;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:Jost,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,0.1);';
-    btn.addEventListener('click', logout);
-    document.body.appendChild(btn);
-    logoutBtnAdded = true;
   }
 
   function sendOTP() {
@@ -371,17 +357,6 @@
     setTimeout(function() {
       alert('Your OTP is: ' + generatedOTP);
     }, 400);
-    setupOTPBoxes();
-  }
-
-  function resendOTP() {
-    generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-    setTimeout(function() {
-      alert('New OTP: ' + generatedOTP);
-    }, 400);
-  }
-
-  function setupOTPBoxes() {
     var boxes = document.getElementById('otp-boxes').querySelectorAll('.otp-box');
     for (var i = 0; i < boxes.length; i++) {
       (function(idx) {
@@ -389,6 +364,9 @@
         boxes[idx].oninput = function() {
           if (this.value.length === 1 && idx < boxes.length - 1) {
             boxes[idx + 1].focus();
+          }
+          if (this.value.length === 1 && idx === boxes.length - 1) {
+            verifyOTP();
           }
         };
         boxes[idx].onkeydown = function(e) {
@@ -401,6 +379,13 @@
     boxes[0].focus();
   }
 
+  function resendOTP() {
+    generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+    setTimeout(function() {
+      alert('New OTP: ' + generatedOTP);
+    }, 400);
+  }
+
   function verifyOTP() {
     var boxes = document.getElementById('otp-boxes').querySelectorAll('.otp-box');
     var entered = '';
@@ -411,7 +396,6 @@
       localStorage.setItem('aarthi_user', JSON.stringify({ phone: userPhone, loggedIn: Date.now() }));
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('root').style.display = 'block';
-      addFixedLogoutButton();
     } else {
       alert('Invalid OTP. Please try again.');
       for (var j = 0; j < boxes.length; j++) {
@@ -424,9 +408,6 @@
   function logout() {
     if (confirm('Logout? Your data stays on this device.')) {
       localStorage.removeItem('aarthi_user');
-      var btn = document.getElementById('aarthi-logout-fixed');
-      if (btn) btn.remove();
-      logoutBtnAdded = false;
       location.reload();
     }
   }
@@ -628,6 +609,7 @@
         { id: "calendar", label: "Orders", icon: "calendar-alt" },
         { id: "insights", label: "AI Insights", icon: "robot" },
         { id: "settings", label: "Settings", icon: "cog" },
+        { id: "logout", label: "Logout", icon: "sign-out-alt" },
       ];
       const currentLabel = items.find(i => i.id === currentView)?.label || 'Dashboard';
       return (
@@ -689,7 +671,7 @@
                   {items.map(item => (
                     <button
                       key={item.id}
-                      onClick={() => { setView(item.id); setDrawerOpen(false); }}
+                      onClick={() => { if (item.id === "logout") { if (confirm("Logout? Your data stays on this device.")) { localStorage.removeItem("aarthi_user"); location.reload(); } setDrawerOpen(false); } else { setView(item.id); setDrawerOpen(false); } }}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-lg font-medium ${
                         currentView === item.id ? "active text-slate-950" : "text-slate-700"
                       }`}
@@ -762,6 +744,17 @@
               <h2 className="font-display text-3xl font-bold text-slate-950">Dashboard</h2>
               <p className="text-slate-700 mt-1">Welcome back, {settings?.ownerName?.split(" ")[0] || "Aarthi"}. Here's your studio overview.</p>
             </div>
+
+          {/* AI Chat Assistant - Moved to Top */}
+<div className="glass-card rounded-2xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(217,154,46,0.12)' }}>
+              <Icon name={icon} size={18} className="text-mauve-600" />
+            </div>
+            <h3 className="font-display text-lg font-semibold text-slate-950">{title}</h3>
+          </div>
+          {children}
+        </div>
             <button onClick={() => setView('calendar')} className="btn-primary px-5 py-2.5 rounded-xl text-lg font-medium flex items-center gap-2">
               <Icon name="plus" size={14} /> New Booking
             </button>
@@ -1353,7 +1346,7 @@ const sendWhatsAppReminder = (b) => {
         window.open(url, '_blank');
       };
 
-const generateInvoice = (b) => {
+const generateInvoice = (b, packages, settings) => {
         const pkg = packages.find(p => p.id === Number(b.packageId));
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
@@ -1730,7 +1723,7 @@ const generateInvoice = (b) => {
                   <button onClick={prevMonth} className="btn-icon border border-mauve-200 hover:bg-mauve-50">
                     <Icon name="chevron-left" size={14} />
                   </button>
-                  <button onClick={() => { setCurrentMonth(today); setSelectedDate(today.toISOString().split('T')[0]); }} className="btn-icon border border-mauve-200 hover:bg-mauve-50 text-base font-medium px-3">Today</button>
+                  <button onClick={() => { setCurrentMonth(today); setSelectedDate(today.toISOString().split('T')[0]); }} className="px-4 py-2 rounded-xl bg-mauve-100 text-mauve-700 hover:bg-mauve-200 transition-colors font-medium text-sm">Today</button>
                   <button onClick={nextMonth} className="btn-icon border border-mauve-200 hover:bg-mauve-50">
                     <Icon name="chevron-right" size={14} />
                   </button>
@@ -1882,7 +1875,7 @@ const generateInvoice = (b) => {
                           <button onClick={() => sendWhatsAppReminder(b)} className="flex items-center gap-1.5 text-base px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors" title="Send WhatsApp reminder">
                             <Icon name="whatsapp" size={12} /> WhatsApp
                           </button>
-                          <button onClick={() => generateInvoice(b)} className="flex items-center gap-1.5 text-base px-3 py-1.5 rounded-lg bg-mauve-50 text-mauve-700 hover:bg-mauve-100 transition-colors" title="Download Invoice PDF">
+                          <button onClick={() => generateInvoice(b, packages, settings)} className="flex items-center gap-1.5 text-base px-3 py-1.5 rounded-lg bg-mauve-50 text-mauve-700 hover:bg-mauve-100 transition-colors" title="Download Invoice PDF">
                             <Icon name="file-invoice" size={12} /> Invoice
                           </button>
                         </div>
@@ -1952,7 +1945,7 @@ const generateInvoice = (b) => {
                           <div className="flex items-center justify-end gap-1 flex-wrap">
                             <button onClick={() => sendEmailConfirmation(b)} className="btn-icon text-slate-600 hover:text-blue-600" title="Send confirmation email"><Icon name="envelope" size={12} /></button>
                             <button onClick={() => sendWhatsAppReminder(b)} className="btn-icon text-slate-600 hover:text-emerald-600" title="Send WhatsApp reminder"><Icon name="whatsapp" size={12} /></button>
-                            <button onClick={() => generateInvoice(b)} className="btn-icon text-slate-600 hover:text-mauve-600" title="Download Invoice PDF"><Icon name="file-invoice" size={12} /></button>
+                            <button onClick={() => generateInvoice(b, packages, settings)} className="btn-icon text-slate-600 hover:text-mauve-600" title="Download Invoice PDF"><Icon name="file-invoice" size={12} /></button>
                             <button onClick={() => openPaymentModal(b)} className="btn-icon text-slate-600 hover:text-amber-600" title="Update payment"><Icon name="wallet" size={12} /></button>
                             <button onClick={() => openEditBooking(b)} className="btn-icon text-slate-600 hover:text-slate-900"><Icon name="edit" size={12} /></button>
                             <button onClick={() => deleteBooking(b.id)} className="btn-icon text-slate-600 hover:text-mauve-600"><Icon name="trash-alt" size={12} /></button>
@@ -2588,15 +2581,7 @@ const generateInvoice = (b) => {
       );
 
       const Section = ({ title, icon, children }) => (
-        <div className="glass-card rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(217,154,46,0.12)' }}>
-              <Icon name={icon} size={18} className="text-mauve-600" />
-            </div>
-            <h3 className="font-display text-lg font-semibold text-slate-950">{title}</h3>
-          </div>
-          {children}
-        </div>
+        
       );
 
       return (
@@ -2747,7 +2732,16 @@ const generateInvoice = (b) => {
               </div>
               <div>
                 <h3 className="font-display text-lg font-semibold text-slate-950">Ask AI Assistant</h3>
+                <h3 className="font-display text-lg font-semibold text-slate-950">Ask AI Assistant</h3>
                 <p className="text-lg text-slate-600">Type any question about your bookings, clients, or revenue.</p>
+                <div style="margin-top:8px;padding:8px 12px;background:rgba(139,91,110,0.06);border-radius:8px;border:1px solid rgba(139,91,110,0.15);">
+                  <p style="font-size:12px;color:#6b4656;margin:0;">
+                    <strong>Need more help?</strong> Try 
+                    <a href="https://chat.openai.com" target="_blank" rel="noopener noreferrer" style="color:#8b5b6e;text-decoration:underline;">ChatGPT</a>, 
+                    <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" style="color:#8b5b6e;text-decoration:underline;">Gemini</a>, or 
+                    <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" style="color:#8b5b6e;text-decoration:underline;">Claude</a> for advanced makeup advice.
+                  </p>
+                </div>
               </div>
             </div>
             <AIChatBox bookings={bookings} packages={packages} settings={settings} stats={stats} />
