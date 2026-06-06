@@ -282,7 +282,7 @@
   </style>
 </head>
 <body>
-  <div id="login-screen" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#6b4656 0%,#4a3040 50%,#3a2030 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;font-family:Jost,sans-serif;">
+  <div id="login-screen" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#6b4656 0%,#4a3040 50%,#3a2030 100%);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;font-family:Jost,sans-serif;">
   <div style="width:100%;max-width:360px;background:#fff;border-radius:24px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;">
     <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#6b4656,#4a3040);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:36px;font-weight:700;color:#e8d5b0;font-family:Jost,sans-serif;">A</div>
     <h2 style="font-family:Cormorant Garamond,serif;font-size:28px;font-weight:700;color:#4a3040;margin:0 0 4px;">Aarthi Makeover</h2>
@@ -326,16 +326,35 @@
 (function() {
   var generatedOTP = '';
   var userPhone = '';
+  var logoutBtnAdded = false;
 
   function checkLogin() {
     var user = localStorage.getItem('aarthi_user');
+    var loginScreen = document.getElementById('login-screen');
+    var root = document.getElementById('root');
+    if (!loginScreen || !root) return;
+
     if (user) {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('root').style.display = 'block';
+      // Already logged in: hide login, show app immediately
+      loginScreen.style.display = 'none';
+      root.style.display = 'block';
+      addFixedLogoutButton();
     } else {
-      document.getElementById('login-screen').style.display = 'flex';
-      document.getElementById('root').style.display = 'none';
+      // Not logged in: show login screen
+      loginScreen.style.display = 'flex';
+      root.style.display = 'none';
     }
+  }
+
+  function addFixedLogoutButton() {
+    if (logoutBtnAdded) return;
+    var btn = document.createElement('button');
+    btn.id = 'aarthi-logout-fixed';
+    btn.textContent = 'Logout';
+    btn.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:50;padding:10px 20px;background:#f3ebef;color:#4a3040;border:2px solid #d4b8c8;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:Jost,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,0.1);';
+    btn.addEventListener('click', logout);
+    document.body.appendChild(btn);
+    logoutBtnAdded = true;
   }
 
   function sendOTP() {
@@ -371,9 +390,6 @@
           if (this.value.length === 1 && idx < boxes.length - 1) {
             boxes[idx + 1].focus();
           }
-          if (this.value.length === 1 && idx === boxes.length - 1) {
-            verifyOTP();
-          }
         };
         boxes[idx].onkeydown = function(e) {
           if (e.key === 'Backspace' && this.value === '' && idx > 0) {
@@ -395,6 +411,7 @@
       localStorage.setItem('aarthi_user', JSON.stringify({ phone: userPhone, loggedIn: Date.now() }));
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('root').style.display = 'block';
+      addFixedLogoutButton();
     } else {
       alert('Invalid OTP. Please try again.');
       for (var j = 0; j < boxes.length; j++) {
@@ -407,11 +424,13 @@
   function logout() {
     if (confirm('Logout? Your data stays on this device.')) {
       localStorage.removeItem('aarthi_user');
+      var btn = document.getElementById('aarthi-logout-fixed');
+      if (btn) btn.remove();
+      logoutBtnAdded = false;
       location.reload();
     }
   }
 
-  // Attach event listeners once DOM is ready
   function init() {
     var btnSend = document.getElementById('btn-send-otp');
     var btnVerify = document.getElementById('btn-verify-otp');
@@ -436,27 +455,6 @@
   } else {
     init();
   }
-
-  // Periodically try to add logout button to settings page using DOM methods (no innerHTML)
-  setInterval(function() {
-    var settingsPages = document.querySelectorAll('div, section');
-    for (var i = 0; i < settingsPages.length; i++) {
-      var page = settingsPages[i];
-      if (page.textContent && page.textContent.indexOf('Settings') > -1 && page.querySelectorAll('input').length > 2) {
-        if (!page.querySelector('#aarthi-logout-btn')) {
-          var wrapper = document.createElement('div');
-          wrapper.style.cssText = 'padding:16px 20px;margin-top:12px;border-top:1px solid #d4b8c8;';
-          var btn = document.createElement('button');
-          btn.id = 'aarthi-logout-btn';
-          btn.textContent = 'Logout';
-          btn.style.cssText = 'width:100%;padding:12px;background:#f3ebef;color:#4a3040;border:2px solid #d4b8c8;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:Jost,sans-serif;';
-          btn.addEventListener('click', logout);
-          wrapper.appendChild(btn);
-          page.appendChild(wrapper);
-        }
-      }
-    }
-  }, 5000);
 })();
 </script>
 
