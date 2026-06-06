@@ -584,7 +584,7 @@
               </button>
             ))}
           </nav>
-          <div className="p-4 border-t border-mauve-100">
+          <div className="p-4 border-t border-mauve-100 space-y-3">
             <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(139,91,110,0.08)' }}>
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg font-semibold" style={{ background: '#4a4a5a', color: '#e5d5dc' }}>
                 {(settings?.ownerName || 'A').charAt(0).toUpperCase()}
@@ -594,6 +594,14 @@
                 <p className="text-lg text-slate-600">Makeup Artist</p>
               </div>
             </div>
+            <button
+              onClick={() => { if (confirm("Logout? Your data stays on this device.")) { localStorage.removeItem("aarthi_user"); location.reload(); } }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-lg font-medium text-red-700 hover:bg-red-50 transition-colors"
+              style={{ border: '1px solid rgba(185,28,28,0.15)' }}
+            >
+              <Icon name="sign-out-alt" size={18} className="text-red-600" />
+              Logout
+            </button>
           </div>
         </div>
       );
@@ -668,10 +676,10 @@
                   </button>
                 </div>
                 <nav className="flex-1 py-3 px-3 space-y-1">
-                  {items.map(item => (
+                  {items.filter(item => item.id !== 'logout').map(item => (
                     <button
                       key={item.id}
-                      onClick={() => { if (item.id === "logout") { if (confirm("Logout? Your data stays on this device.")) { localStorage.removeItem("aarthi_user"); location.reload(); } setDrawerOpen(false); } else { setView(item.id); setDrawerOpen(false); } }}
+                      onClick={() => { setView(item.id); setDrawerOpen(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-lg font-medium ${
                         currentView === item.id ? "active text-slate-950" : "text-slate-700"
                       }`}
@@ -681,6 +689,15 @@
                       {item.label}
                     </button>
                   ))}
+                  <div className="my-2 border-t border-mauve-100" />
+                  <button
+                    onClick={() => { if (confirm("Logout? Your data stays on this device.")) { localStorage.removeItem("aarthi_user"); location.reload(); } setDrawerOpen(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-lg font-medium text-red-700 hover:bg-red-50 transition-colors"
+                    style={{ border: '1px solid rgba(185,28,28,0.15)' }}
+                  >
+                    <Icon name="sign-out-alt" size={18} className="text-red-600" />
+                    Logout
+                  </button>
                 </nav>
                 <div className="p-4 border-t border-mauve-100">
                   <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(139,91,110,0.08)' }}>
@@ -745,16 +762,6 @@
               <p className="text-slate-700 mt-1">Welcome back, {settings?.ownerName?.split(" ")[0] || "Aarthi"}. Here's your studio overview.</p>
             </div>
 
-          {/* AI Chat Assistant - Moved to Top */}
-<div className="glass-card rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(217,154,46,0.12)' }}>
-              <Icon name={icon} size={18} className="text-mauve-600" />
-            </div>
-            <h3 className="font-display text-lg font-semibold text-slate-950">{title}</h3>
-          </div>
-          {children}
-        </div>
             <button onClick={() => setView('calendar')} className="btn-primary px-5 py-2.5 rounded-xl text-lg font-medium flex items-center gap-2">
               <Icon name="plus" size={14} /> New Booking
             </button>
@@ -2236,6 +2243,289 @@ const generateInvoice = (b, packages, settings) => {
         const lower = q.toLowerCase();
         const words = lower.split(/\s+/);
 
+        // === MAKEUP & BEAUTY KNOWLEDGE (checked FIRST before business queries) ===
+        // Skin-type product advice (no need for "foundation" keyword)
+        if (lower.includes('oily') || lower.includes('acne') || lower.includes('pimple') || lower.includes('oil')) {
+          return `**Makeup Products for Oily / Acne-Prone Skin:**\n\n` +
+            `**Primer:**\n` +
+            `• Mattifying primer — Smashbox Photo Finish Matte, NYX Shine Killer, e.l.f. Poreless Putty\n\n` +
+            `**Foundation:**\n` +
+            `• Maybelline Fit Me Matte + Poreless, L'Oreal Infallible 24H Matte, MAC Studio Fix Fluid SPF 15\n` +
+            `• Water-based or gel formulas are better than heavy cream\n` +
+            `• Always set with **translucent powder** after applying foundation\n\n` +
+            `**Concealer:**\n` +
+            `• LA Girl Pro Conceal (High Definition), Maybelline Fit Me Concealer\n` +
+            `• Set under eyes with a light dusting of powder to prevent creasing\n\n` +
+            `**Setting:**\n` +
+            `• Translucent powder: Maybelline Fit Me, Laura Mercier Translucent Loose\n` +
+            `• Setting spray: NYX Matte Finish, MAC Prep + Prime Fix+, L'Oreal Infallible Setting Spray\n\n` +
+            `**Pro tip:** Apply a mattifying primer before foundation, use a damp beauty sponge for a lighter finish, and always blot (don’t add powder) for midday touch-ups.`;
+        }
+        if (lower.includes('dry') || lower.includes('flaky') || lower.includes('dull') || lower.includes('hydrat') || lower.includes('moistur')) {
+          return `**Makeup Products for Dry Skin:**\n\n` +
+            `**Primer:**\n` +
+            `• Hydrating primer — Smashbox Photo Finish Hydrating, NYX Honey Dew Me Up, e.l.f. Hydrating Primer\n\n` +
+            `**Foundation:**\n` +
+            `• L'Oreal True Match Lumi, Maybelline Dream Satin Liquid, MAC Studio Fix Soft\n` +
+            `• Look for words: "dewy," "hydrating," "satin," "luminous"\n` +
+            `• Avoid matte formulas — they’ll emphasize flakes and feel tight\n\n` +
+            `**Concealer:**\n` +
+            `• Cream or liquid concealer: Maybelline Fit Me (lightweight), NARS Radiant Creamy Concealer\n` +
+            `• Set lightly with a **hydrating setting powder** or skip powder on dry areas\n\n` +
+            `**Highlight / Blush:**\n` +
+            `• Cream or liquid blush (Rare Beauty Soft Pinch, NYX Bare With Me) blends better on dry skin than powder\n` +
+            `• Cream highlighter gives a natural glow without looking powdery\n\n` +
+            `**Setting:**\n` +
+            `• Skip heavy powder on dry areas; use a **dewy setting spray** instead\n\n` +
+            `**Pro tip:** Mix a drop of facial oil or moisturizer into your foundation. Always prep with a rich moisturizer and let it absorb for 2-3 minutes before applying makeup.`;
+        }
+
+        // Foundation
+        if (lower.includes('foundation') && (lower.includes('oily') || lower.includes('skin'))) {
+          return `**Foundation for Oily Skin:**\n\n` +
+            `• Look for **matte or oil-free** formulas labeled "long-wear" or "24-hour"\n` +
+            `• Water-based or gel foundations work better than heavy cream ones\n` +
+            `• Set with a **translucent powder** after application\n` +
+            `• Recommended: Maybelline Fit Me Matte, L'Oreal Infallible, MAC Studio Fix Fluid\n` +
+            `• **Pro tip:** Apply a mattifying primer before foundation for extra staying power`;
+        }
+        if (lower.includes('foundation') && (lower.includes('dry') || lower.includes('dry skin'))) {
+          return `**Foundation for Dry Skin:**\n\n` +
+            `• Choose **hydrating or dewy-finish** foundations\n` +
+            `• Look for ingredients like hyaluronic acid, glycerin, or squalane\n` +
+            `• Avoid matte formulas — they can emphasize flakes\n` +
+            `• Recommended: L'Oreal True Match, Maybelline Dream Satin, MAC Studio Fix Soft\n` +
+            `• **Pro tip:** Mix a drop of facial oil into your foundation for a glowy finish`;
+        }
+        if (lower.includes('foundation') && (lower.includes('shade') || lower.includes('match') || lower.includes('color'))) {
+          return `**How to Match Foundation:**\n\n` +
+            `• Test on your **jawline**, not your wrist or hand\n` +
+            `• Check the match in **natural daylight** after 1-2 minutes\n` +
+            `• The right shade should "disappear" into your skin\n` +
+            `• Consider your undertone: **warm** (golden/yellow), **cool** (pink/blue), or **neutral**\n` +
+            `• **Pro tip:** Buy 2-3 closest shades and blend them for a custom match`;
+        }
+
+        // Skincare
+        if (lower.includes('skincare') || lower.includes('skin care') || lower.includes('prep') || lower.includes('before makeup')) {
+          return `**Pre-Makeup Skincare Routine:**\n\n` +
+            `1. **Cleanse** — Remove dirt and oil with a gentle cleanser\n` +
+            `2. **Tone** — Balance skin pH (optional but helpful for oily skin)\n` +
+            `3. **Moisturize** — Hydrate even oily skin; use a lightweight gel for oily, richer cream for dry\n` +
+            `4. **Sunscreen** — Essential if doing makeup during daytime\n` +
+            `5. **Primer** — Creates a smooth canvas and helps makeup last longer\n\n` +
+            `**Pro tip:** Let each layer absorb for 1-2 minutes before applying the next. Makeup sits best on well-prepped, hydrated skin.`;
+        }
+        if (lower.includes('primer') || lower.includes('face primer')) {
+          return `**Types of Primers & When to Use Them:**\n\n` +
+            `• **Silicone-based** (e.g., Smashbox Photo Finish) — Fills pores and smooths texture\n` +
+            `• **Hydrating primer** — For dry skin; adds moisture under foundation\n` +
+            `• **Mattifying primer** — For oily skin; controls shine all day\n` +
+            `• **Color-correcting primer** — Green neutralizes redness, purple brightens dull skin, peach hides dark circles\n` +
+            `• **Luminous primer** — Adds a glow under foundation\n\n` +
+            `Apply a thin layer after moisturizer and before foundation. A little goes a long way!`;
+        }
+
+        // Bridal makeup
+        if (lower.includes('bridal') || lower.includes('wedding') || lower.includes('bride')) {
+          if (lower.includes('eye') || lower.includes('eye makeup')) {
+            return `**Bridal Eye Makeup Tips:**\n\n` +
+              `• **Start with an eye primer** — Wedding makeup must last 12+ hours\n` +
+              `• **Neutral base** — Sweep a matte beige over the entire lid\n` +
+              `• **Define the crease** — Use a warm brown or mauve slightly darker than your skin tone\n` +
+              `• **Add shimmer** — Apply a champagne or gold shimmer on the center of the lid (not the whole lid)\n` +
+              `• **Winged eyeliner** — Gel or liquid liner; practice the wing shape beforehand\n` +
+              `• **False lashes** — Individual lashes look more natural than strip lashes for brides\n` +
+              `• **Waterproof mascara** — Non-negotiable for happy tears!\n\n` +
+              `**Color recommendations:**\n` +
+              `• Fair skin: Soft rose gold, champagne, taupe\n` +
+              `• Medium skin: Bronze, copper, warm browns\n` +
+              `• Deeper skin: Rich gold, deep burgundy, chocolate brown`;
+          }
+          if (lower.includes('lip') || lower.includes('lipstick')) {
+            return `**Bridal Lipstick Guide:**\n\n` +
+              `• **Long-wear matte** formulas are best for longevity\n` +
+              `• Line lips with a matching liner before applying lipstick\n` +
+              `• Blot with tissue, apply a second layer, and set with translucent powder\n` +
+              `• **Classic Indian bridal shades:**\n` +
+              `  - Red: MAC Ruby Woo, Maybelline SuperStay Pioneer\n` +
+              `  - Maroon: Huda Beauty Heartbreaker, Lakme 9to5 Wine\n` +
+              `  - Nude-pink: Charlotte Tilbury Pillow Talk, Maybelline Nude Nuance\n` +
+              `  - Coral: MAC Costa Chic, Lakme Peach Spell\n\n` +
+              `**Pro tip:** Carry a small touch-up kit with the exact lipstick + liner for quick fixes.`;
+          }
+          return `**Bridal Makeup Essentials:**\n\n` +
+            `• **Base must be flawless** — Use full-coverage foundation + concealer\n` +
+            `• **Set everything** — Powder, setting spray, and waterproof everything\n` +
+            `• **Contour & highlight** — Subtle sculpting photographs beautifully\n` +
+            `• **Eye makeup** — Go slightly bolder than daily; cameras wash out color\n` +
+            `• **Blush** — Apply more than you think; it looks softer in photos\n` +
+            `• **Trial run** — Always do a full trial 2-4 weeks before the wedding\n` +
+            `• **Touch-up kit** — Lipstick, blotting paper, small powder compact, Q-tips\n\n` +
+            `Ask me about bridal eye makeup, bridal lipstick, or jewelry pairing for specific looks!`;
+        }
+
+        // Eye makeup
+        if (lower.includes('eye makeup') || lower.includes('eyeshadow') || lower.includes('eye look')) {
+          return `**Eye Makeup Basics:**\n\n` +
+            `1. **Prime** — Eye primer prevents creasing and makes colors pop\n` +
+            `2. **Transition shade** — Matte medium brown blended into the crease\n` +
+            `3. **Lid color** — Apply a shimmer or matte shade on the eyelid\n` +
+            `4. **Outer V** — Darken the outer corner with a deeper shade for depth\n` +
+            `5. **Highlight** — Light shimmer on the inner corner and brow bone\n` +
+            `6. **Eyeliner** — Tight-line the upper lash line for definition\n` +
+            `7. **Mascara** — Wiggle at the base and pull upward\n\n` +
+            `**Beginner-friendly palettes:** Maybelline Nudes, Lakme Absolute, Morphe 350M`;
+        }
+        if (lower.includes('eyeliner') || lower.includes('kajal') || lower.includes('kohl')) {
+          return `**Eyeliner & Kajal Tips:**\n\n` +
+            `• **Liquid liner** — Best for sharp wings; requires steady hands\n` +
+            `• **Gel liner** — Great for smudged looks; use with an angled brush\n` +
+            `• **Pencil/kajal** — Perfect for waterline; choose waterproof for longevity\n` +
+            `• **Tight-lining** — Apply liner between the lashes for fuller-looking eyes\n` +
+            `• **Winged liner trick:** Use tape or a spoon handle as a guide!\n\n` +
+            `**Best Indian kajals:** Maybelline Colossal Kajal, Lakme Eyeconic, Plum Natur Studio`;
+        }
+        if (lower.includes('mascara') || lower.includes('lash') || lower.includes('lashes')) {
+          return `**Mascara & Lash Tips:**\n\n` +
+            `• **Curl first** — Always curl lashes before mascara for a lift\n` +
+            `• **Wiggle technique** — Wiggle the wand at the base and sweep upward\n` +
+            `• **2-3 coats** — Let each coat dry slightly before the next\n` +
+            `• **Bottom lashes** — Use the tip of the wand vertically\n` +
+            `• **False lashes:**\n` +
+            `  - **Strip lashes** — Faster, dramatic; trim to fit your eye\n` +
+            `  - **Individual lashes** — More natural, longer to apply\n` +
+            `  - Apply lash glue, wait 30 seconds for it to get tacky, then place\n\n` +
+            `**Best mascaras:** Maybelline Lash Sensational, L'Oreal Lash Paradise, Too Faced Better Than Sex`;
+        }
+
+        // Contour & highlight
+        if (lower.includes('contour') || lower.includes('highlight') || lower.includes('sculpt') || lower.includes('face shape')) {
+          return `**Contouring & Highlighting by Face Shape:**\n\n` +
+            `• **Round face:** Contour the temples, under cheekbones (toward ears), and jawline; highlight the center of the forehead and chin\n` +
+            `• **Oval face:** Subtle contour under cheekbones; highlight forehead, chin, and nose bridge\n` +
+            `• **Square face:** Contour the jawline corners and temples; soften the angles\n` +
+            `• **Heart face:** Contour the forehead sides and point of chin; highlight the cheekbones\n` +
+            `• **Long face:** Contour the forehead and chin horizontally to shorten; highlight the cheeks\n\n` +
+            `**Products:** Use matte bronzer or contour stick 2-3 shades darker than your skin. Highlight with a lighter concealer or cream highlighter.`;
+        }
+
+        // Blush
+        if (lower.includes('blush') || lower.includes('cheek')) {
+          return `**Blush Tips by Skin Tone:**\n\n` +
+            `• **Fair skin:** Soft pinks, peaches, and light corals\n` +
+            `• **Medium/olive skin:** Warm peaches, roses, and mauves\n` +
+            `• **Deeper skin:** Rich berries, deep oranges, brick reds\n\n` +
+            `**Application:**\n` +
+            `• Smile and apply to the **apples of your cheeks**, blending upward toward the temples\n` +
+            `• Don't go lower than the nose tip — it can drag the face down\n` +
+            `• **Cream blush** for dry skin, **powder blush** for oily skin\n\n` +
+            `**Best blushes:** Milani Luminoso (peach), NYX Mauve, Rare Beauty Soft Pinch`;
+        }
+
+        // Lipstick
+        if (lower.includes('lipstick') || lower.includes('lip color') || lower.includes('lip shade')) {
+          return `**Lipstick Tips & Shade Guide:**\n\n` +
+            `• **Prep first:** Exfoliate with a lip scrub, then apply lip balm\n` +
+            `• **Line your lips** with a matching liner to prevent feathering and define shape\n` +
+            `• **For long wear:** Apply, blot with tissue, dust with powder, apply again\n` +
+            `• **Matte lipstick** — Long-lasting but can be drying; prep with balm\n` +
+            `• **Cream/satin** — Comfortable and moisturizing; needs reapplication\n` +
+            `• **Liquid lipstick** — Maximum staying power; can feel heavy\n\n` +
+            `**Indian skin tone favorites:**\n` +
+            `• MAC Ruby Woo (universal red), MAC Mehr (mauve-pink), Huda Beauty Icon (terracotta), Lakme 9to5 Pink Bureau (everyday pink)`;
+        }
+
+        // Concealer
+        if (lower.includes('concealer') || lower.includes('dark circle') || lower.includes('spot') || lower.includes('coverage')) {
+          return `**Concealer Guide:**\n\n` +
+            `• **Under eyes:** Use a shade **1-2 tones lighter** than your foundation with a peach or salmon undertone to cancel dark circles\n` +
+            `• **Blemishes/spot concealing:** Use a shade matching your foundation exactly so it blends seamlessly\n` +
+            `• **Highlighting:** Apply a lighter concealer to the center of the forehead, bridge of nose, chin, and under eyes\n` +
+            `• **Cream concealer** — Best for dry skin and under eyes\n` +
+            `• **Liquid concealer** — Buildable coverage, good for all skin types\n` +
+            `• **Stick concealer** — Full coverage, good for blemishes\n\n` +
+            `**Best concealers:** LA Girl Pro Conceal (affordable), Maybelline Fit Me, Tarte Shape Tape`;
+        }
+
+        // Setting spray / finishing
+        if (lower.includes('setting spray') || lower.includes('fix') || lower.includes('finish') || lower.includes('makeup last')) {
+          return `**How to Make Makeup Last All Day:**\n\n` +
+            `1. **Prime** — Always start with a primer suited to your skin type\n` +
+            `2. **Layer products** — Cream products first, then set with powder\n` +
+            `3. **Set with powder** — Use translucent powder on oily areas (T-zone)\n` +
+            `4. **Setting spray** — Mist after completing makeup to melt everything together\n` +
+            `5. **Blotting paper** — For touch-ups during the day (don't add more powder)\n` +
+            `6. **Long-wear formulas** — Choose waterproof mascara, smudge-proof liner, and matte lipstick for events\n\n` +
+            `**Setting sprays:** NYX Matte Finish, MAC Prep + Prime Fix+, L'Oreal Infallible Setting Spray`;
+        }
+
+        // Rental jewelry / accessory pairing
+        if (lower.includes('jewelry') || lower.includes('jewellery') || lower.includes('rental') || lower.includes('accessories') || lower.includes('matching') || lower.includes('pair')) {
+          return `**Makeup & Jewelry Pairing Tips:**\n\n` +
+            `• **Heavy necklace + heavy earrings = too much.** Pick one statement piece and keep the other subtle\n` +
+            `• **Gold jewelry** — Warm-toned makeup (gold eyeshadow, peach blush, warm nude lips) looks best\n` +
+            `• **Silver/platinum jewelry** — Cool-toned makeup (silver shimmer, pink blush, cool pink lips)\n` +
+            `• **Red bridal lehenga** — Classic red or maroon lipstick with gold eye makeup\n` +
+            `• **Pastel outfit** — Soft pink, peach, or mauve makeup with pearl or diamond jewelry\n` +
+            `• **Deep green/blue outfit** — Gold eyeshadow with a nude or berry lip complements beautifully\n` +
+            `• **Maang tikka** — Keep forehead makeup matte; shimmer can reflect strangely under lights\n\n` +
+            `**Rental jewelry tip:** Always match the metal tone (all gold or all silver) for a cohesive look.`;
+        }
+
+        // Saree / outfit makeup
+        if (lower.includes('saree') || lower.includes('sari') || lower.includes('outfit') || lower.includes('dress') || lower.includes('lehenga')) {
+          return `**Makeup Tips for Indian Outfits:**\n\n` +
+            `• **Red/Maroon saree or lehenga:** Bold red or maroon lipstick, gold eyeshadow, defined brows, heavy mascara\n` +
+            `• **Pastel saree:** Soft pink/peach makeup, subtle highlight, glossy lips, minimal jewelry\n` +
+            `• **Black outfit:** Smokey eyes, nude or deep berry lip, dramatic lashes\n` +
+            `• **White/cream outfit:** Fresh dewy skin, soft pink lips, brown eyeliner, subtle gold highlight\n` +
+            `• **Floral printed outfit:** Match your blush to a color in the print; keep eyes neutral\n` +
+            `• **Silk Kanjeevaram:** Traditional gold or copper eye makeup, red bindi, bold red lip\n\n` +
+            `**Rule of thumb:** If your outfit is heavily embellished, keep makeup elegant but not competing. If the outfit is simple, you can go bolder with makeup.`;
+        }
+
+        // Makeup brushes / tools
+        if (lower.includes('brush') || lower.includes('tool') || lower.includes('applicator') || lower.includes('sponge')) {
+          return `**Essential Makeup Brushes & Tools:**\n\n` +
+            `• **Flat foundation brush** — For cream/liquid foundation\n` +
+            `• **Beauty sponge (damp!)** — For blending foundation and concealer seamlessly\n` +
+            `• **Powder brush** — Large, fluffy brush for setting powder\n` +
+            `• **Blush brush** — Medium, slightly angled brush\n` +
+            `• **Contour brush** — Angled, dense brush for sculpting\n` +
+            `• **Eyeshadow brushes (3-4):** Flat shader (packing color), fluffy blending brush, small detail brush, angled liner brush\n` +
+            `• **Eyebrow spoolie** — For brushing brows and blending product\n\n` +
+            `**Budget-friendly sets:** Real Techniques, Wet n Wild, NYX Professional Makeup`;
+        }
+
+        // Makeup removal
+        if (lower.includes('remove') || lower.includes('cleanse') || lower.includes('take off') || lower.includes('wash') || lower.includes('micellar')) {
+          return `**Makeup Removal & Night Routine:**\n\n` +
+            `1. **Oil cleanser or micellar water** — Dissolves makeup and sunscreen first\n` +
+            `2. **Water-based cleanser** — Second cleanse to remove residue and clean pores\n` +
+            `3. **Never sleep with makeup** — It clogs pores and causes breakouts and premature aging\n` +
+            `4. **Eye makeup remover** — Use a separate gentle remover for waterproof mascara and liner\n` +
+            `5. **After cleansing:** Tone (optional), moisturize, and apply any serums\n\n` +
+            `**Best removers:** Garnier Micellar Water, Bioderma Sensibio, Clinique Take The Day Off, coconut oil (budget option)`;
+        }
+
+        // General makeup advice catch-all (if question mentions products, skin, makeup, beauty but didn't match above)
+        if (lower.includes('makeup') || lower.includes('product') || lower.includes('skin') || lower.includes('beauty') || lower.includes('cosmetic') || lower.includes('face')) {
+          return `I'd be happy to help with that! Here are some topics I know well:\n\n` +
+            `• Foundations for oily, dry, or combination skin\n` +
+            `• Skincare prep before makeup\n` +
+            `• Bridal makeup (eyes, lips, full look)\n` +
+            `• Eye makeup, eyeliner, mascara, and lashes\n` +
+            `• Contouring, blush, and highlighting\n` +
+            `• Lipstick shades and long-wear tips\n` +
+            `• Concealers and dark circle coverage\n` +
+            `• How to make makeup last all day\n` +
+            `• Jewelry and outfit makeup pairing\n` +
+            `• Makeup brushes and tools\n` +
+            `• Makeup removal routines\n\n` +
+            `Ask me something specific like "What foundation for oily skin?" or "Bridal eye makeup tips?"`;
+        }
+
         // Revenue queries
         if (lower.includes('revenue') || lower.includes('earning') || lower.includes('income') || lower.includes('money')) {
           if (lower.includes('this month') || lower.includes('current month')) {
@@ -2384,25 +2674,265 @@ const generateInvoice = (b, packages, settings) => {
             `**Busiest Month:** ${stats.busiestMonth ? `${monthNamesFull[stats.busiestMonth[0].slice(5,7)]} ${stats.busiestMonth[0].slice(0,4)}` : 'N/A'}`;
         }
 
-        // Greeting / help
+        // === MAKEUP & BEAUTY KNOWLEDGE ===
+        // Foundation
+        if (lower.includes('foundation') && (lower.includes('oily') || lower.includes('skin'))) {
+          return `**Foundation for Oily Skin:**\n\n` +
+            `• Look for **matte or oil-free** formulas labeled "long-wear" or "24-hour"\n` +
+            `• Water-based or gel foundations work better than heavy cream ones\n` +
+            `• Set with a **translucent powder** after application\n` +
+            `• Recommended: Maybelline Fit Me Matte, L'Oreal Infallible, MAC Studio Fix Fluid\n` +
+            `• **Pro tip:** Apply a mattifying primer before foundation for extra staying power`;
+        }
+        if (lower.includes('foundation') && (lower.includes('dry') || lower.includes('dry skin'))) {
+          return `**Foundation for Dry Skin:**\n\n` +
+            `• Choose **hydrating or dewy-finish** foundations\n` +
+            `• Look for ingredients like hyaluronic acid, glycerin, or squalane\n` +
+            `• Avoid matte formulas — they can emphasize flakes\n` +
+            `• Recommended: L'Oreal True Match, Maybelline Dream Satin, MAC Studio Fix Soft\n` +
+            `• **Pro tip:** Mix a drop of facial oil into your foundation for a glowy finish`;
+        }
+        if (lower.includes('foundation') && (lower.includes('shade') || lower.includes('match') || lower.includes('color'))) {
+          return `**How to Match Foundation:**\n\n` +
+            `• Test on your **jawline**, not your wrist or hand\n` +
+            `• Check the match in **natural daylight** after 1-2 minutes\n` +
+            `• The right shade should "disappear" into your skin\n` +
+            `• Consider your undertone: **warm** (golden/yellow), **cool** (pink/blue), or **neutral**\n` +
+            `• **Pro tip:** Buy 2-3 closest shades and blend them for a custom match`;
+        }
+
+        // Skincare
+        if (lower.includes('skincare') || lower.includes('skin care') || lower.includes('prep') || lower.includes('before makeup')) {
+          return `**Pre-Makeup Skincare Routine:**\n\n` +
+            `1. **Cleanse** — Remove dirt and oil with a gentle cleanser\n` +
+            `2. **Tone** — Balance skin pH (optional but helpful for oily skin)\n` +
+            `3. **Moisturize** — Hydrate even oily skin; use a lightweight gel for oily, richer cream for dry\n` +
+            `4. **Sunscreen** — Essential if doing makeup during daytime\n` +
+            `5. **Primer** — Creates a smooth canvas and helps makeup last longer\n\n` +
+            `**Pro tip:** Let each layer absorb for 1-2 minutes before applying the next. Makeup sits best on well-prepped, hydrated skin.`;
+        }
+        if (lower.includes('primer') || lower.includes('face primer')) {
+          return `**Types of Primers & When to Use Them:**\n\n` +
+            `• **Silicone-based** (e.g., Smashbox Photo Finish) — Fills pores and smooths texture\n` +
+            `• **Hydrating primer** — For dry skin; adds moisture under foundation\n` +
+            `• **Mattifying primer** — For oily skin; controls shine all day\n` +
+            `• **Color-correcting primer** — Green neutralizes redness, purple brightens dull skin, peach hides dark circles\n` +
+            `• **Luminous primer** — Adds a glow under foundation\n\n` +
+            `Apply a thin layer after moisturizer and before foundation. A little goes a long way!`;
+        }
+
+        // Bridal makeup
+        if (lower.includes('bridal') || lower.includes('wedding') || lower.includes('bride')) {
+          if (lower.includes('eye') || lower.includes('eye makeup')) {
+            return `**Bridal Eye Makeup Tips:**\n\n` +
+              `• **Start with an eye primer** — Wedding makeup must last 12+ hours\n` +
+              `• **Neutral base** — Sweep a matte beige over the entire lid\n` +
+              `• **Define the crease** — Use a warm brown or mauve slightly darker than your skin tone\n` +
+              `• **Add shimmer** — Apply a champagne or gold shimmer on the center of the lid (not the whole lid)\n` +
+              `• **Winged eyeliner** — Gel or liquid liner; practice the wing shape beforehand\n` +
+              `• **False lashes** — Individual lashes look more natural than strip lashes for brides\n` +
+              `• **Waterproof mascara** — Non-negotiable for happy tears!\n\n` +
+              `**Color recommendations:**\n` +
+              `• Fair skin: Soft rose gold, champagne, taupe\n` +
+              `• Medium skin: Bronze, copper, warm browns\n` +
+              `• Deeper skin: Rich gold, deep burgundy, chocolate brown`;
+          }
+          if (lower.includes('lip') || lower.includes('lipstick')) {
+            return `**Bridal Lipstick Guide:**\n\n` +
+              `• **Long-wear matte** formulas are best for longevity\n` +
+              `• Line lips with a matching liner before applying lipstick\n` +
+              `• Blot with tissue, apply a second layer, and set with translucent powder\n` +
+              `• **Classic Indian bridal shades:**\n` +
+              `  - Red: MAC Ruby Woo, Maybelline SuperStay Pioneer\n` +
+              `  - Maroon: Huda Beauty Heartbreaker, Lakme 9to5 Wine\n` +
+              `  - Nude-pink: Charlotte Tilbury Pillow Talk, Maybelline Nude Nuance\n` +
+              `  - Coral: MAC Costa Chic, Lakme Peach Spell\n\n` +
+              `**Pro tip:** Carry a small touch-up kit with the exact lipstick + liner for quick fixes.`;
+          }
+          return `**Bridal Makeup Essentials:**\n\n` +
+            `• **Base must be flawless** — Use full-coverage foundation + concealer\n` +
+            `• **Set everything** — Powder, setting spray, and waterproof everything\n` +
+            `• **Contour & highlight** — Subtle sculpting photographs beautifully\n` +
+            `• **Eye makeup** — Go slightly bolder than daily; cameras wash out color\n` +
+            `• **Blush** — Apply more than you think; it looks softer in photos\n` +
+            `• **Trial run** — Always do a full trial 2-4 weeks before the wedding\n` +
+            `• **Touch-up kit** — Lipstick, blotting paper, small powder compact, Q-tips\n\n` +
+            `Ask me about bridal eye makeup, bridal lipstick, or jewelry pairing for specific looks!`;
+        }
+
+        // Eye makeup
+        if (lower.includes('eye makeup') || lower.includes('eyeshadow') || lower.includes('eye look')) {
+          return `**Eye Makeup Basics:**\n\n` +
+            `1. **Prime** — Eye primer prevents creasing and makes colors pop\n` +
+            `2. **Transition shade** — Matte medium brown blended into the crease\n` +
+            `3. **Lid color** — Apply a shimmer or matte shade on the eyelid\n` +
+            `4. **Outer V** — Darken the outer corner with a deeper shade for depth\n` +
+            `5. **Highlight** — Light shimmer on the inner corner and brow bone\n` +
+            `6. **Eyeliner** — Tight-line the upper lash line for definition\n` +
+            `7. **Mascara** — Wiggle at the base and pull upward\n\n` +
+            `**Beginner-friendly palettes:** Maybelline Nudes, Lakme Absolute, Morphe 350M`;
+        }
+        if (lower.includes('eyeliner') || lower.includes('kajal') || lower.includes('kohl')) {
+          return `**Eyeliner & Kajal Tips:**\n\n` +
+            `• **Liquid liner** — Best for sharp wings; requires steady hands\n` +
+            `• **Gel liner** — Great for smudged looks; use with an angled brush\n` +
+            `• **Pencil/kajal** — Perfect for waterline; choose waterproof for longevity\n` +
+            `• **Tight-lining** — Apply liner between the lashes for fuller-looking eyes\n` +
+            `• **Winged liner trick:** Use tape or a spoon handle as a guide!\n\n` +
+            `**Best Indian kajals:** Maybelline Colossal Kajal, Lakme Eyeconic, Plum Natur Studio`;
+        }
+        if (lower.includes('mascara') || lower.includes('lash') || lower.includes('lashes')) {
+          return `**Mascara & Lash Tips:**\n\n` +
+            `• **Curl first** — Always curl lashes before mascara for a lift\n` +
+            `• **Wiggle technique** — Wiggle the wand at the base and sweep upward\n` +
+            `• **2-3 coats** — Let each coat dry slightly before the next\n` +
+            `• **Bottom lashes** — Use the tip of the wand vertically\n` +
+            `• **False lashes:**\n` +
+            `  - **Strip lashes** — Faster, dramatic; trim to fit your eye\n` +
+            `  - **Individual lashes** — More natural, longer to apply\n` +
+            `  - Apply lash glue, wait 30 seconds for it to get tacky, then place\n\n` +
+            `**Best mascaras:** Maybelline Lash Sensational, L'Oreal Lash Paradise, Too Faced Better Than Sex`;
+        }
+
+        // Contour & highlight
+        if (lower.includes('contour') || lower.includes('highlight') || lower.includes('sculpt') || lower.includes('face shape')) {
+          return `**Contouring & Highlighting by Face Shape:**\n\n` +
+            `• **Round face:** Contour the temples, under cheekbones (toward ears), and jawline; highlight the center of the forehead and chin\n` +
+            `• **Oval face:** Subtle contour under cheekbones; highlight forehead, chin, and nose bridge\n` +
+            `• **Square face:** Contour the jawline corners and temples; soften the angles\n` +
+            `• **Heart face:** Contour the forehead sides and point of chin; highlight the cheekbones\n` +
+            `• **Long face:** Contour the forehead and chin horizontally to shorten; highlight the cheeks\n\n` +
+            `**Products:** Use matte bronzer or contour stick 2-3 shades darker than your skin. Highlight with a lighter concealer or cream highlighter.`;
+        }
+
+        // Blush
+        if (lower.includes('blush') || lower.includes('cheek')) {
+          return `**Blush Tips by Skin Tone:**\n\n` +
+            `• **Fair skin:** Soft pinks, peaches, and light corals\n` +
+            `• **Medium/olive skin:** Warm peaches, roses, and mauves\n` +
+            `• **Deeper skin:** Rich berries, deep oranges, brick reds\n\n` +
+            `**Application:**\n` +
+            `• Smile and apply to the **apples of your cheeks**, blending upward toward the temples\n` +
+            `• Don't go lower than the nose tip — it can drag the face down\n` +
+            `• **Cream blush** for dry skin, **powder blush** for oily skin\n\n` +
+            `**Best blushes:** Milani Luminoso (peach), NYX Mauve, Rare Beauty Soft Pinch`;
+        }
+
+        // Lipstick
+        if (lower.includes('lipstick') || lower.includes('lip color') || lower.includes('lip shade')) {
+          return `**Lipstick Tips & Shade Guide:**\n\n` +
+            `• **Prep first:** Exfoliate with a lip scrub, then apply lip balm\n` +
+            `• **Line your lips** with a matching liner to prevent feathering and define shape\n` +
+            `• **For long wear:** Apply, blot with tissue, dust with powder, apply again\n` +
+            `• **Matte lipstick** — Long-lasting but can be drying; prep with balm\n` +
+            `• **Cream/satin** — Comfortable and moisturizing; needs reapplication\n` +
+            `• **Liquid lipstick** — Maximum staying power; can feel heavy\n\n` +
+            `**Indian skin tone favorites:**\n` +
+            `• MAC Ruby Woo (universal red), MAC Mehr (mauve-pink), Huda Beauty Icon (terracotta), Lakme 9to5 Pink Bureau (everyday pink)`;
+        }
+
+        // Concealer
+        if (lower.includes('concealer') || lower.includes('dark circle') || lower.includes('spot') || lower.includes('coverage')) {
+          return `**Concealer Guide:**\n\n` +
+            `• **Under eyes:** Use a shade **1-2 tones lighter** than your foundation with a peach or salmon undertone to cancel dark circles\n` +
+            `• **Blemishes/spot concealing:** Use a shade matching your foundation exactly so it blends seamlessly\n` +
+            `• **Highlighting:** Apply a lighter concealer to the center of the forehead, bridge of nose, chin, and under eyes\n` +
+            `• **Cream concealer** — Best for dry skin and under eyes\n` +
+            `• **Liquid concealer** — Buildable coverage, good for all skin types\n` +
+            `• **Stick concealer** — Full coverage, good for blemishes\n\n` +
+            `**Best concealers:** LA Girl Pro Conceal (affordable), Maybelline Fit Me, Tarte Shape Tape`;
+        }
+
+        // Setting spray / finishing
+        if (lower.includes('setting spray') || lower.includes('fix') || lower.includes('finish') || lower.includes('makeup last')) {
+          return `**How to Make Makeup Last All Day:**\n\n` +
+            `1. **Prime** — Always start with a primer suited to your skin type\n` +
+            `2. **Layer products** — Cream products first, then set with powder\n` +
+            `3. **Set with powder** — Use translucent powder on oily areas (T-zone)\n` +
+            `4. **Setting spray** — Mist after completing makeup to melt everything together\n` +
+            `5. **Blotting paper** — For touch-ups during the day (don't add more powder)\n` +
+            `6. **Long-wear formulas** — Choose waterproof mascara, smudge-proof liner, and matte lipstick for events\n\n` +
+            `**Setting sprays:** NYX Matte Finish, MAC Prep + Prime Fix+, L'Oreal Infallible Setting Spray`;
+        }
+
+        // Rental jewelry / accessory pairing
+        if (lower.includes('jewelry') || lower.includes('jewellery') || lower.includes('rental') || lower.includes('accessories') || lower.includes('matching') || lower.includes('pair')) {
+          return `**Makeup & Jewelry Pairing Tips:**\n\n` +
+            `• **Heavy necklace + heavy earrings = too much.** Pick one statement piece and keep the other subtle\n` +
+            `• **Gold jewelry** — Warm-toned makeup (gold eyeshadow, peach blush, warm nude lips) looks best\n` +
+            `• **Silver/platinum jewelry** — Cool-toned makeup (silver shimmer, pink blush, cool pink lips)\n` +
+            `• **Red bridal lehenga** — Classic red or maroon lipstick with gold eye makeup\n` +
+            `• **Pastel outfit** — Soft pink, peach, or mauve makeup with pearl or diamond jewelry\n` +
+            `• **Deep green/blue outfit** — Gold eyeshadow with a nude or berry lip complements beautifully\n` +
+            `• **Maang tikka** — Keep forehead makeup matte; shimmer can reflect strangely under lights\n\n` +
+            `**Rental jewelry tip:** Always match the metal tone (all gold or all silver) for a cohesive look.`;
+        }
+
+        // Saree / outfit makeup
+        if (lower.includes('saree') || lower.includes('sari') || lower.includes('outfit') || lower.includes('dress') || lower.includes('lehenga')) {
+          return `**Makeup Tips for Indian Outfits:**\n\n` +
+            `• **Red/Maroon saree or lehenga:** Bold red or maroon lipstick, gold eyeshadow, defined brows, heavy mascara\n` +
+            `• **Pastel saree:** Soft pink/peach makeup, subtle highlight, glossy lips, minimal jewelry\n` +
+            `• **Black outfit:** Smokey eyes, nude or deep berry lip, dramatic lashes\n` +
+            `• **White/cream outfit:** Fresh dewy skin, soft pink lips, brown eyeliner, subtle gold highlight\n` +
+            `• **Floral printed outfit:** Match your blush to a color in the print; keep eyes neutral\n` +
+            `• **Silk Kanjeevaram:** Traditional gold or copper eye makeup, red bindi, bold red lip\n\n` +
+            `**Rule of thumb:** If your outfit is heavily embellished, keep makeup elegant but not competing. If the outfit is simple, you can go bolder with makeup.`;
+        }
+
+        // Makeup brushes / tools
+        if (lower.includes('brush') || lower.includes('tool') || lower.includes('applicator') || lower.includes('sponge')) {
+          return `**Essential Makeup Brushes & Tools:**\n\n` +
+            `• **Flat foundation brush** — For cream/liquid foundation\n` +
+            `• **Beauty sponge (damp!)** — For blending foundation and concealer seamlessly\n` +
+            `• **Powder brush** — Large, fluffy brush for setting powder\n` +
+            `• **Blush brush** — Medium, slightly angled brush\n` +
+            `• **Contour brush** — Angled, dense brush for sculpting\n` +
+            `• **Eyeshadow brushes (3-4):** Flat shader (packing color), fluffy blending brush, small detail brush, angled liner brush\n` +
+            `• **Eyebrow spoolie** — For brushing brows and blending product\n\n` +
+            `**Budget-friendly sets:** Real Techniques, Wet n Wild, NYX Professional Makeup`;
+        }
+
+        // Makeup removal
+        if (lower.includes('remove') || lower.includes('cleanse') || lower.includes('take off') || lower.includes('wash') || lower.includes('micellar')) {
+          return `**Makeup Removal & Night Routine:**\n\n` +
+            `1. **Oil cleanser or micellar water** — Dissolves makeup and sunscreen first\n` +
+            `2. **Water-based cleanser** — Second cleanse to remove residue and clean pores\n` +
+            `3. **Never sleep with makeup** — It clogs pores and causes breakouts and premature aging\n` +
+            `4. **Eye makeup remover** — Use a separate gentle remover for waterproof mascara and liner\n` +
+            `5. **After cleansing:** Tone (optional), moisturize, and apply any serums\n\n` +
+            `**Best removers:** Garnier Micellar Water, Bioderma Sensibio, Clinique Take The Day Off, coconut oil (budget option)`;
+        }
+
+        // General greeting / help (updated to include makeup topics)
         if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey') || lower.includes('help')) {
-          return `Hello ${settings?.ownerName?.split(' ')[0] || 'there'}! 👋 I'm here to help. You can ask me things like:\n\n` +
+          return `Hello ${settings?.ownerName?.split(' ')[0] || 'there'}! 👋 I'm your makeup studio assistant. I can help with:\n\n` +
+            `**Studio Data:**\n` +
             `• "What's my revenue this month?"\n` +
             `• "Who are my top clients?"\n` +
             `• "Show my bookings today"\n` +
-            `• "What's my most popular package?"\n` +
-            `• "Give me a full studio summary"\n` +
-            `• "How many pending bookings do I have?"`;
+            `• "Give me a full studio summary"\n\n` +
+            `**Makeup Knowledge:**\n` +
+            `• "What foundation suits oily skin?"\n` +
+            `• "How to do bridal eye makeup?"\n` +
+            `• "Lipstick for Indian bridal look"\n` +
+            `• "How to make makeup last all day?"\n` +
+            `• "Jewelry pairing with red lehenga"\n` +
+            `• "Best concealer for dark circles?"`;
         }
 
-        // Default fallback
-        return `I didn't quite catch that. Here are some things I can help you with:\n\n` +
-          `• Revenue (total, this month, last month)\n` +
-          `• Clients (top clients, repeat clients, upcoming)\n` +
-          `• Bookings (today, tomorrow, pending, upcoming)\n` +
-          `• Packages (popular, prices)\n` +
-          `• Studio summary / overview\n\n` +
-          `Try asking "What is my revenue?" or "Show me a summary!"`;
+        // Default fallback (updated to mention makeup knowledge)
+        return `I'm not sure I understood that. Here are some things I can help you with:\n\n` +
+          `**Studio & Business:**\n` +
+          `• Revenue, bookings, clients, packages, studio summary\n\n` +
+          `**Makeup & Beauty Advice:**\n` +
+          `• Foundations, skincare prep, primers, concealers\n` +
+          `• Bridal makeup (eyes, lips, full look)\n` +
+          `• Eye makeup, eyeliner, mascara, lashes\n` +
+          `• Contouring, blush, lipstick, setting spray\n` +
+          `• Jewelry pairing, outfit makeup tips\n` +
+          `• Brush tools, makeup removal\n\n` +
+          `Try asking: "What foundation suits oily skin?" or "Show me a summary!"`;
       };
 
       const handleSubmit = (e) => {
@@ -2581,7 +3111,15 @@ const generateInvoice = (b, packages, settings) => {
       );
 
       const Section = ({ title, icon, children }) => (
-        
+        <div className="glass-card rounded-2xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-mauve-50 flex items-center justify-center">
+              <Icon name={icon} size={18} className="text-mauve-600" />
+            </div>
+            <h3 className="font-display text-xl font-semibold text-slate-950">{title}</h3>
+          </div>
+          {children}
+        </div>
       );
 
       return (
@@ -2595,6 +3133,28 @@ const generateInvoice = (b, packages, settings) => {
               <Icon name="brain" size={16} className="text-mauve-600" />
               <span className="text-lg font-medium text-mauve-700">Auto-generated</span>
             </div>
+          </div>
+
+          {/* AI Chat Assistant */}
+          <div className="glass-card rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.12)' }}>
+                <Icon name="robot" size={18} style={{ color: '#7c3aed' }} />
+              </div>
+              <div>
+                <h3 className="font-display text-lg font-semibold text-slate-950">Ask AI Assistant</h3>
+                <p className="text-lg text-slate-600">Ask anything about makeup, skincare, bridal looks, or your studio data.</p>
+                <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(139,91,110,0.06)', borderRadius: 8, border: '1px solid rgba(139,91,110,0.15)' }}>
+                  <p style={{ fontSize: 12, color: '#6b4656', margin: 0 }}>
+                    <strong>Need more help?</strong> Try{' '}
+                    <a href="https://chat.openai.com" target="_blank" rel="noopener noreferrer" style={{ color: '#8b5b6e', textDecoration: 'underline' }}>ChatGPT</a>,{' '}
+                    <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" style={{ color: '#8b5b6e', textDecoration: 'underline' }}>Gemini</a>, or{' '}
+                    <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#8b5b6e', textDecoration: 'underline' }}>Claude</a> for advanced makeup advice.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <AIChatBox bookings={bookings} packages={packages} settings={settings} stats={stats} />
           </div>
 
           {/* Quick Stats */}
@@ -2722,29 +3282,6 @@ const generateInvoice = (b, packages, settings) => {
                 </div>
               )}
             </Section>
-          </div>
-
-          {/* AI Chat Assistant */}
-          <div className="glass-card rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.12)' }}>
-                <Icon name="robot" size={18} style={{ color: '#7c3aed' }} />
-              </div>
-              <div>
-                <h3 className="font-display text-lg font-semibold text-slate-950">Ask AI Assistant</h3>
-                <h3 className="font-display text-lg font-semibold text-slate-950">Ask AI Assistant</h3>
-                <p className="text-lg text-slate-600">Type any question about your bookings, clients, or revenue.</p>
-                <div style="margin-top:8px;padding:8px 12px;background:rgba(139,91,110,0.06);border-radius:8px;border:1px solid rgba(139,91,110,0.15);">
-                  <p style="font-size:12px;color:#6b4656;margin:0;">
-                    <strong>Need more help?</strong> Try 
-                    <a href="https://chat.openai.com" target="_blank" rel="noopener noreferrer" style="color:#8b5b6e;text-decoration:underline;">ChatGPT</a>, 
-                    <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" style="color:#8b5b6e;text-decoration:underline;">Gemini</a>, or 
-                    <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" style="color:#8b5b6e;text-decoration:underline;">Claude</a> for advanced makeup advice.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <AIChatBox bookings={bookings} packages={packages} settings={settings} stats={stats} />
           </div>
 
           {/* Status Breakdown */}
