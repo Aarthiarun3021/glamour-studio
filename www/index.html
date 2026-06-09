@@ -12,6 +12,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -1947,10 +1948,23 @@ const generateInvoice = (b) => {
           {/* Invoice Modal */}
           <Modal isOpen={invoiceModalOpen} onClose={() => setInvoiceModalOpen(false)} title={invoiceTitle} size="lg">
             <div>
-              <div dangerouslySetInnerHTML={{ __html: invoiceHtml }} />
+              <div id="invoice-pdf-content" dangerouslySetInnerHTML={{ __html: invoiceHtml }} />
               <div className="flex gap-3 mt-4 pt-4 border-t border-mauve-100">
                 <button onClick={() => setInvoiceModalOpen(false)} className="flex-1 py-2.5 rounded-xl text-lg font-medium btn-secondary">Close</button>
-                <button onClick={() => window.print()} className="flex-1 py-2.5 rounded-xl text-lg font-medium btn-primary">Print / Save as PDF</button>
+                <button onClick={() => {
+                  const el = document.getElementById('invoice-pdf-content');
+                  if (el && window.html2pdf) {
+                    html2pdf().set({
+                      margin: 10,
+                      filename: `Invoice-${invoiceTitle.replace(/\s+/g, '-')}-${Date.now()}.pdf`,
+                      image: { type: 'jpeg', quality: 0.98 },
+                      html2canvas: { scale: 2, useCORS: true },
+                      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    }).from(el).save();
+                  } else {
+                    alert('PDF generator is loading. Please try again in a moment.');
+                  }
+                }} className="flex-1 py-2.5 rounded-xl text-lg font-medium btn-primary">Download PDF</button>
               </div>
             </div>
           </Modal>
