@@ -12,7 +12,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -1154,6 +1153,9 @@
       const [paymentForm, setPaymentForm] = useState({ paymentStatus: 'unpaid', amountPaid: '', paidVia: 'cash' });
       const [selectedPaymentBooking, setSelectedPaymentBooking] = useState(null);
       const [extraItemForm, setExtraItemForm] = useState({ packageId: '', qty: 1 });
+      const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+      const [invoiceHtml, setInvoiceHtml] = useState('');
+      const [invoiceTitle, setInvoiceTitle] = useState('Invoice');
 
       const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
       const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
@@ -1352,7 +1354,7 @@ const sendWhatsAppReminder = (b) => {
         window.open(url, '_blank');
       };
 
-const generateInvoice = (b, packages, settings) => {
+const generateInvoice = (b) => {
         const pkg = packages.find(p => p.id === Number(b.packageId));
         const qty = Number(b.quantity) || 1;
         const extras = (b.extraItems || []);
@@ -1376,80 +1378,53 @@ const generateInvoice = (b, packages, settings) => {
           });
 
           html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#f5f0f2;color:#3a2e38;max-width:600px;margin:0 auto}
-.invoice-card{background:#fff;border:2px solid #8b5b6e;border-radius:12px;padding:24px;margin-bottom:20px}
-.header{text-align:center;border-bottom:2px solid #d4b8c8;padding-bottom:16px;margin-bottom:20px}
-.header h1{color:#4a3040;font-size:28px;margin:0 0 4px}
-.header p{color:#6b4656;margin:0;font-size:14px}
-.contacts{text-align:center;font-size:13px;color:#6b4656;margin-bottom:12px}
-.details{background:#faf8f3;padding:16px;border-radius:8px;margin-bottom:20px}
-.details p{margin:6px 0;font-size:14px}
-.details strong{color:#4a3040}
-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px}
-th{background:#f5f0f2;color:#4a3040;padding:10px 12px;text-align:left;border-bottom:2px solid #d4b8c8}
-td{padding:10px 12px;border-bottom:1px solid #eee}
-.totals{text-align:right;font-size:15px}
-.totals p{margin:6px 0}
-.totals .balance{font-size:20px;font-weight:bold;color:#4a3040;margin-top:12px;border-top:2px solid #d4b8c8;padding-top:8px}
-.dates{background:#faf8f3;padding:12px;border-radius:8px;margin-bottom:20px;font-size:13px}
-.dates p{margin:4px 0}
-.signatures{display:flex;justify-content:space-between;margin-top:30px;font-size:13px}
-.signature{width:40%;border-top:1px solid #8b5b6e;padding-top:8px;text-align:center}
-.footer{font-size:11px;color:#6b4656;text-align:center;margin-top:20px}
-.print-btn{display:block;width:100%;padding:14px;background:#6b4656;color:#e8d5b0;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:20px}
-@media print{.print-btn{display:none}}
-</style></head>
-<body>
-<button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
-<div class="invoice-card">
-  <div class="header">
-    <h1>${bizName.toUpperCase()}</h1>
-    <p>MAKEOVER & RENTAL JEWELLERY</p>
+<div style="font-family:Arial,sans-serif;margin:0;padding:16px;background:#f5f0f2;color:#3a2e38;max-width:600px;margin:0 auto">
+<div style="background:#fff;border:2px solid #8b5b6e;border-radius:12px;padding:24px;margin-bottom:16px">
+  <div style="text-align:center;border-bottom:2px solid #d4b8c8;padding-bottom:16px;margin-bottom:20px">
+    <h1 style="color:#4a3040;font-size:26px;margin:0 0 4px">${bizName.toUpperCase()}</h1>
+    <p style="color:#6b4656;margin:0;font-size:14px">MAKEOVER & RENTAL JEWELLERY</p>
   </div>
-  <div class="contacts">
+  <div style="text-align:center;font-size:13px;color:#6b4656;margin-bottom:12px">
     ${settings?.phone ? `Mobile: ${settings.phone}<br>` : ''}
     ${settings?.address ? `Address: ${settings.address}<br>` : ''}
     ${settings?.instagram ? `Instagram: ${settings.instagram}<br>` : ''}
   </div>
-  <div class="details">
-    <p><strong>Invoice No:</strong> INV-${b.id}</p>
-    <p><strong>Date:</strong> ${today}</p>
-    <p><strong>Name:</strong> ${b.clientName}</p>
-    <p><strong>Mobile:</strong> ${b.phone || '-'}</p>
-    <p><strong>Address:</strong> ${b.address || '-'}</p>
+  <div style="background:#faf8f3;padding:16px;border-radius:8px;margin-bottom:20px">
+    <p style="margin:6px 0;font-size:14px"><strong style="color:#4a3040">Invoice No:</strong> INV-${b.id}</p>
+    <p style="margin:6px 0;font-size:14px"><strong style="color:#4a3040">Date:</strong> ${today}</p>
+    <p style="margin:6px 0;font-size:14px"><strong style="color:#4a3040">Name:</strong> ${b.clientName}</p>
+    <p style="margin:6px 0;font-size:14px"><strong style="color:#4a3040">Mobile:</strong> ${b.phone || '-'}</p>
+    <p style="margin:6px 0;font-size:14px"><strong style="color:#4a3040">Address:</strong> ${b.address || '-'}</p>
   </div>
-  <table>
-    <tr><th>Particulars</th><th style="text-align:center">Qty</th><th style="text-align:right">Amount</th></tr>
-    <tr><td>${pkg?.name || 'Jewellery Item'}<br><small style="color:#6b4656">${pkg?.description || ''}</small></td><td style="text-align:center">${qty}</td><td style="text-align:right">Rs. ${((pkg?.price || 0) * qty).toLocaleString('en-IN')}</td></tr>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px">
+    <tr><th style="background:#f5f0f2;color:#4a3040;padding:10px 12px;text-align:left;border-bottom:2px solid #d4b8c8">Particulars</th><th style="background:#f5f0f2;color:#4a3040;padding:10px 12px;text-align:center;border-bottom:2px solid #d4b8c8">Qty</th><th style="background:#f5f0f2;color:#4a3040;padding:10px 12px;text-align:right;border-bottom:2px solid #d4b8c8">Amount</th></tr>
+    <tr><td style="padding:10px 12px;border-bottom:1px solid #eee">${pkg?.name || 'Jewellery Item'}<br><small style="color:#6b4656">${pkg?.description || ''}</small></td><td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:center">${qty}</td><td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:right">Rs. ${((pkg?.price || 0) * qty).toLocaleString('en-IN')}</td></tr>
     ${extraRows}
   </table>
-  <div class="totals">
-    <p>Total Rent: <strong>Rs. ${rentTotal.toLocaleString('en-IN')}</strong></p>
-    <p>Deposit: <strong>Rs. ${deposit.toLocaleString('en-IN')}</strong></p>
-    <p>Advance: <strong>Rs. ${advance.toLocaleString('en-IN')}</strong></p>
-    <p>Paid So Far: <strong>Rs. ${amountPaid.toLocaleString('en-IN')}</strong></p>
-    <p class="balance">Balance: Rs. ${balance.toLocaleString('en-IN')}</p>
+  <div style="text-align:right;font-size:15px">
+    <p style="margin:6px 0">Total Rent: <strong>Rs. ${rentTotal.toLocaleString('en-IN')}</strong></p>
+    <p style="margin:6px 0">Deposit: <strong>Rs. ${deposit.toLocaleString('en-IN')}</strong></p>
+    <p style="margin:6px 0">Advance: <strong>Rs. ${advance.toLocaleString('en-IN')}</strong></p>
+    <p style="margin:6px 0">Paid So Far: <strong>Rs. ${amountPaid.toLocaleString('en-IN')}</strong></p>
+    <p style="font-size:20px;font-weight:bold;color:#4a3040;margin-top:12px;border-top:2px solid #d4b8c8;padding-top:8px">Balance: Rs. ${balance.toLocaleString('en-IN')}</p>
     <p style="font-size:12px;color:#6b4656">(Deposit to be refunded at return = Rs. ${deposit.toLocaleString('en-IN')})</p>
   </div>
-  <div class="dates">
-    <p><strong>Booking Date:</strong> ${b.date || '-'}</p>
-    <p><strong>Receiving Date:</strong> ${b.receivingDate || '-'}</p>
-    <p><strong>Returning Date:</strong> ${b.returningDate || '-'}</p>
+  <div style="background:#faf8f3;padding:12px;border-radius:8px;margin-bottom:20px;font-size:13px;margin-top:16px">
+    <p style="margin:4px 0"><strong>Booking Date:</strong> ${b.date || '-'}</p>
+    <p style="margin:4px 0"><strong>Receiving Date:</strong> ${b.receivingDate || '-'}</p>
+    <p style="margin:4px 0"><strong>Returning Date:</strong> ${b.returningDate || '-'}</p>
   </div>
-  <div class="signatures">
-    <div class="signature">Customer Signature</div>
-    <div class="signature">Authorized Signature</div>
+  <div style="display:flex;justify-content:space-between;margin-top:30px;font-size:13px">
+    <div style="width:40%;border-top:1px solid #8b5b6e;padding-top:8px;text-align:center">Customer Signature</div>
+    <div style="width:40%;border-top:1px solid #8b5b6e;padding-top:8px;text-align:center">Authorized Signature</div>
   </div>
-  <div class="footer">
+  <div style="font-size:11px;color:#6b4656;text-align:center;margin-top:20px">
     <p>No Exchange & No Cancellation for Rental Booking.</p>
     <p>In case of damage / returning jewels later than the mentioned date, charges will be applicable.</p>
   </div>
 </div>
-</body></html>`;
+</div>`;
+          setInvoiceTitle('Jewellery Rental Invoice');
         } else {
           const totalMakeup = (pkg?.price || 0) + extraTotal;
 
@@ -1472,80 +1447,49 @@ td{padding:10px 12px;border-bottom:1px solid #eee}
           }
 
           html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#f5f0f2;color:#3a2e38;max-width:600px;margin:0 auto}
-.invoice-card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
-.header{background:#f3ebef;padding:20px;border-radius:12px 12px 0 0;margin:-24px -24px 20px -24px;text-align:center}
-.header h1{color:#4a3040;font-size:24px;margin:0 0 4px}
-.header p{color:#6b4656;margin:0;font-size:13px}
-.details{background:#fff;border:1px solid #e8d5dc;border-radius:8px;padding:16px;margin-bottom:20px;display:flex;gap:24px;flex-wrap:wrap}
-.details-col{flex:1;min-width:140px}
-.details-col p{margin:4px 0;font-size:13px;color:#6b4656}
-.details-col strong{color:#4a3040;font-size:14px}
-.billed-to{background:#faf8f3;padding:12px 16px;border-radius:8px;margin-bottom:20px}
-.billed-to h3{color:#4a3040;font-size:16px;margin:0 0 8px}
-.billed-to p{margin:4px 0;font-size:14px;color:#6b4656}
-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px}
-th{background:#f5f0f2;color:#4a3040;padding:10px 12px;text-align:left;border-bottom:2px solid #d4b8c8}
-td{padding:10px 12px;border-bottom:1px solid #eee}
-.total-row{text-align:right;font-size:16px;font-weight:bold;color:#4a3040;border-top:2px solid #d4b8c8;padding-top:12px}
-.footer{background:#f3ebef;padding:16px;border-radius:0 0 12px 12px;margin:20px -24px -24px -24px;text-align:center}
-.footer p{margin:4px 0;font-size:12px;color:#6b4656}
-.print-btn{display:block;width:100%;padding:14px;background:#6b4656;color:#e8d5b0;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:20px}
-@media print{.print-btn{display:none}}
-</style></head>
-<body>
-<button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
-<div class="invoice-card">
-  <div class="header">
-    <h1>${bizName}</h1>
-    <p>Makeup Artist — Invoice</p>
+<div style="font-family:Arial,sans-serif;margin:0;padding:16px;background:#f5f0f2;color:#3a2e38;max-width:600px;margin:0 auto">
+<div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+  <div style="background:#f3ebef;padding:20px;border-radius:12px 12px 0 0;margin:-24px -24px 20px -24px;text-align:center">
+    <h1 style="color:#4a3040;font-size:24px;margin:0 0 4px">${bizName}</h1>
+    <p style="color:#6b4656;margin:0;font-size:13px">Makeup Artist — Invoice</p>
   </div>
-  <div class="details">
-    <div class="details-col">
-      <p>Invoice #</p><strong>INV-${b.id}</strong>
-      <p>Date</p><strong>${today}</strong>
+  <div style="background:#fff;border:1px solid #e8d5dc;border-radius:8px;padding:16px;margin-bottom:20px;display:flex;gap:24px;flex-wrap:wrap">
+    <div style="flex:1;min-width:140px">
+      <p style="margin:4px 0;font-size:13px;color:#6b4656">Invoice #</p><strong style="color:#4a3040;font-size:14px">INV-${b.id}</strong>
+      <p style="margin:4px 0;font-size:13px;color:#6b4656">Date</p><strong style="color:#4a3040;font-size:14px">${today}</strong>
     </div>
-    <div class="details-col">
-      <p>Booking Date</p><strong>${b.date}</strong>
-      <p>Status</p><strong>${b.status.toUpperCase()}</strong>
+    <div style="flex:1;min-width:140px">
+      <p style="margin:4px 0;font-size:13px;color:#6b4656">Booking Date</p><strong style="color:#4a3040;font-size:14px">${b.date}</strong>
+      <p style="margin:4px 0;font-size:13px;color:#6b4656">Status</p><strong style="color:#4a3040;font-size:14px">${b.status.toUpperCase()}</strong>
     </div>
   </div>
-  <div class="billed-to">
-    <h3>Billed To</h3>
-    <p><strong>${b.clientName}</strong></p>
-    ${b.phone ? `<p>${b.phone}</p>` : ''}
-    ${b.email ? `<p>${b.email}</p>` : ''}
+  <div style="background:#faf8f3;padding:12px 16px;border-radius:8px;margin-bottom:20px">
+    <h3 style="color:#4a3040;font-size:16px;margin:0 0 8px">Billed To</h3>
+    <p style="margin:4px 0;font-size:14px;color:#6b4656"><strong>${b.clientName}</strong></p>
+    ${b.phone ? `<p style="margin:4px 0;font-size:14px;color:#6b4656">${b.phone}</p>` : ''}
+    ${b.email ? `<p style="margin:4px 0;font-size:14px;color:#6b4656">${b.email}</p>` : ''}
   </div>
-  <table>
-    <tr><th>Item</th><th style="text-align:center">Description</th><th style="text-align:right">Price</th></tr>
-    <tr><td><strong>${pkg?.name || 'Custom Package'}</strong></td><td style="text-align:center">${pkg?.description || '-'}</td><td style="text-align:right"><strong>Rs. ${pkg?.price?.toLocaleString('en-IN') || '0'}</strong></td></tr>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px">
+    <tr><th style="background:#f5f0f2;color:#4a3040;padding:10px 12px;text-align:left;border-bottom:2px solid #d4b8c8">Item</th><th style="background:#f5f0f2;color:#4a3040;padding:10px 12px;text-align:center;border-bottom:2px solid #d4b8c8">Description</th><th style="background:#f5f0f2;color:#4a3040;padding:10px 12px;text-align:right;border-bottom:2px solid #d4b8c8">Price</th></tr>
+    <tr><td style="padding:10px 12px;border-bottom:1px solid #eee"><strong>${pkg?.name || 'Custom Package'}</strong></td><td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:center">${pkg?.description || '-'}</td><td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:right"><strong>Rs. ${pkg?.price?.toLocaleString('en-IN') || '0'}</strong></td></tr>
     ${extraRows}
   </table>
-  <div class="total-row">
+  <div style="text-align:right;font-size:16px;font-weight:bold;color:#4a3040;border-top:2px solid #d4b8c8;padding-top:12px">
     Total: Rs. ${totalMakeup.toLocaleString('en-IN')}
   </div>
   ${paymentInfo}
-  <div class="footer">
-    <p>Thank you for your business!</p>
+  <div style="background:#f3ebef;padding:16px;border-radius:0 0 12px 12px;margin:20px -24px -24px -24px;text-align:center">
+    <p style="margin:4px 0;font-size:12px;color:#6b4656">Thank you for your business!</p>
     ${contactFooter}
-    <p>${bizName}</p>
+    <p style="margin:4px 0;font-size:12px;color:#6b4656">${bizName}</p>
   </div>
 </div>
-</body></html>`;
+</div>`;
+          setInvoiceTitle('Makeup Invoice');
         }
 
-        const w = window.open('', '_blank');
-        if (w) {
-          w.document.write(html);
-          w.document.close();
-        } else {
-          alert('Popup blocked. Please allow popups for this site to view the invoice.');
-        }
-
+        setInvoiceHtml(html);
+        setInvoiceModalOpen(true);
       };
 
       const calendarDays = [];
@@ -1746,7 +1690,7 @@ td{padding:10px 12px;border-bottom:1px solid #eee}
                           <button onClick={() => sendWhatsAppReminder(b)} className="flex items-center gap-1.5 text-base px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors" title="Send WhatsApp reminder">
                             <Icon name="whatsapp" size={12} /> WhatsApp
                           </button>
-                          <button onClick={() => generateInvoice(b, packages, settings)} className="flex items-center gap-1.5 text-base px-3 py-1.5 rounded-lg bg-mauve-50 text-mauve-700 hover:bg-mauve-100 transition-colors" title="Download Invoice PDF">
+                          <button onClick={() => generateInvoice(b)} className="flex items-center gap-1.5 text-base px-3 py-1.5 rounded-lg bg-mauve-50 text-mauve-700 hover:bg-mauve-100 transition-colors" title="Download Invoice PDF">
                             <Icon name="file-invoice" size={12} /> Invoice
                           </button>
                         </div>
@@ -1816,7 +1760,7 @@ td{padding:10px 12px;border-bottom:1px solid #eee}
                           <div className="flex items-center justify-end gap-1 flex-wrap">
                             <button onClick={() => sendEmailConfirmation(b)} className="btn-icon text-slate-600 hover:text-blue-600" title="Send confirmation email"><Icon name="envelope" size={12} /></button>
                             <button onClick={() => sendWhatsAppReminder(b)} className="btn-icon text-slate-600 hover:text-emerald-600" title="Send WhatsApp reminder"><Icon name="whatsapp" size={12} /></button>
-                            <button onClick={() => generateInvoice(b, packages, settings)} className="btn-icon text-slate-600 hover:text-mauve-600" title="Download Invoice PDF"><Icon name="file-invoice" size={12} /></button>
+                            <button onClick={() => generateInvoice(b)} className="btn-icon text-slate-600 hover:text-mauve-600" title="Download Invoice PDF"><Icon name="file-invoice" size={12} /></button>
                             <button onClick={() => openPaymentModal(b)} className="btn-icon text-slate-600 hover:text-amber-600" title="Update payment"><Icon name="wallet" size={12} /></button>
                             <button onClick={() => openEditBooking(b)} className="btn-icon text-slate-600 hover:text-slate-900"><Icon name="edit" size={12} /></button>
                             <button onClick={() => deleteBooking(b.id)} className="btn-icon text-slate-600 hover:text-mauve-600"><Icon name="trash-alt" size={12} /></button>
@@ -1996,6 +1940,17 @@ td{padding:10px 12px;border-bottom:1px solid #eee}
                 <button onClick={saveBooking} className="flex-1 py-2.5 rounded-xl text-lg font-medium btn-primary">
                   {editingBooking ? 'Update Booking' : 'Create Booking'}
                 </button>
+              </div>
+            </div>
+          </Modal>
+
+          {/* Invoice Modal */}
+          <Modal isOpen={invoiceModalOpen} onClose={() => setInvoiceModalOpen(false)} title={invoiceTitle} size="lg">
+            <div>
+              <div dangerouslySetInnerHTML={{ __html: invoiceHtml }} />
+              <div className="flex gap-3 mt-4 pt-4 border-t border-mauve-100">
+                <button onClick={() => setInvoiceModalOpen(false)} className="flex-1 py-2.5 rounded-xl text-lg font-medium btn-secondary">Close</button>
+                <button onClick={() => window.print()} className="flex-1 py-2.5 rounded-xl text-lg font-medium btn-primary">Print / Save as PDF</button>
               </div>
             </div>
           </Modal>
