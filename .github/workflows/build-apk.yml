@@ -2,9 +2,7 @@ name: Build APK
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -12,75 +10,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install dependencies
+        run: npm install
 
-    - name: Install Capacitor Android platform
-      run: npx cap add android
+      - name: Set app name
+        run: |
+          mkdir -p android/app/src/main/res/values
+          cat > android/app/src/main/res/values/strings.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">Aarthi Makeover</string>
+              <string name="title_activity_main">Aarthi Makeover</string>
+          </resources>
+          EOF
 
-    - name: Sync web assets
-      run: npx cap sync android
+      - name: Install Capacitor Filesystem plugin
+        run: |
+          npm install @capacitor/filesystem
+          npx cap sync
 
-    - name: Install ImageMagick
-      run: sudo apt-get update && sudo apt-get install -y imagemagick
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    - name: Generate app icon
-      run: |
-        # Create purple background icon with gold "A" letter
-        convert -size 512x512 xc:"#6b4656" -fill "#e8d5b0" -gravity center -pointsize 220 -font "DejaVu-Sans-Bold" -annotate +0+0 "A" /tmp/icon.png
-        # Round the corners
-        convert -size 512x512 xc:black -fill white -draw "roundrectangle 0,0 512,512 80,80" /tmp/mask.png
-        convert /tmp/icon.png /tmp/mask.png -alpha off -compose CopyOpacity -composite /tmp/icon_rounded.png
-        # Create mipmap directories
-        mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-        mkdir -p android/app/src/main/res/mipmap-xxhdpi
-        mkdir -p android/app/src/main/res/mipmap-xhdpi
-        mkdir -p android/app/src/main/res/mipmap-hdpi
-        mkdir -p android/app/src/main/res/mipmap-mdpi
-        # Resize for all screen densities
-        convert /tmp/icon_rounded.png -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-        convert /tmp/icon_rounded.png -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-        convert /tmp/icon_rounded.png -resize 96x96 android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-        convert /tmp/icon_rounded.png -resize 72x72 android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-        convert /tmp/icon_rounded.png -resize 48x48 android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-        # Foreground icons (same for now)
-        for dir in mipmap-xxxhdpi mipmap-xxhdpi mipmap-xhdpi mipmap-hdpi mipmap-mdpi; do
-          cp android/app/src/main/res/$dir/ic_launcher.png android/app/src/main/res/$dir/ic_launcher_foreground.png
-        done
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
 
-    - name: Set app name
-      run: |
-        mkdir -p android/app/src/main/res/values
-        cat > android/app/src/main/res/values/strings.xml << 'EOF'
-        <?xml version="1.0" encoding="utf-8"?>
-        <resources>
-            <string name="app_name">Aarthi Makeover</string>
-            <string name="title_activity_main">Aarthi Makeover</string>
-        </resources>
-        EOF
+      - name: Build APK with Gradle
+        run: cd android && ./gradlew assembleDebug
 
-    - name: Set up JDK
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x android/gradlew
-
-    - name: Build APK with Gradle
-      run: cd android && ./gradlew assembleDebug
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: aarthi-makeover-apk
-        path: android/app/build/outputs/apk/debug/app-debug.apk
-        if-no-files-found: warn
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: aarthi-makeover-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
