@@ -21,6 +21,17 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Add Android platform
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+
+      - name: Install Capacitor Filesystem plugin
+        run: |
+          npm install @capacitor/filesystem@5.1.4
+          npx cap sync
+
       - name: Set app name
         run: |
           mkdir -p android/app/src/main/res/values
@@ -31,11 +42,6 @@ jobs:
               <string name="title_activity_main">Aarthi Makeover</string>
           </resources>
           EOF
-
-      - name: Install Capacitor Filesystem plugin (v5 compatible)
-        run: |
-          npm install @capacitor/filesystem@5.1.4
-          npx cap sync
 
       - name: Set up JDK
         uses: actions/setup-java@v4
