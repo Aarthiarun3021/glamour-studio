@@ -12,7 +12,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -1157,6 +1157,7 @@
       const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
       const [invoiceHtml, setInvoiceHtml] = useState('');
       const [invoiceTitle, setInvoiceTitle] = useState('Invoice');
+      const [currentInvoiceBooking, setCurrentInvoiceBooking] = useState(null);
       const [pdfLoading, setPdfLoading] = useState(false);
 
       const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
@@ -1357,6 +1358,7 @@ const sendWhatsAppReminder = (b) => {
       };
 
 const generateInvoice = (b) => {
+        setCurrentInvoiceBooking(b);
         const pkg = packages.find(p => p.id === Number(b.packageId));
         const qty = Number(b.quantity) || 1;
         const extras = (b.extraItems || []);
@@ -1494,62 +1496,356 @@ const generateInvoice = (b) => {
         setInvoiceModalOpen(true);
       };
 
-      const handleSaveInvoiceImage = async () => {
-        if (pdfLoading) return;
-        setPdfLoading(true);
-        const el = document.getElementById('invoice-pdf-content');
-        if (!el || !window.html2canvas) {
-          alert('Image generator loading. Please try again in a few seconds.');
-          setPdfLoading(false);
+      const downloadInvoicePdf = () => {
+        const b = currentInvoiceBooking;
+        if (!b || !window.jspdf) {
+          alert('PDF library is still loading. Please try again in a moment.');
           return;
         }
+        const pkg = packages.find(p => p.id === Number(b.packageId));
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+
+        const primary = '#4a3040';
+        const secondary = '#6b6b80';
+
+        const qty = Number(b.quantity) || 1;
+        const extras = (b.extraItems || []);
+        const extraTotal = extras.reduce((s, ei) => s + (ei.price * (ei.qty || 1)), 0);
+        const rentTotal = (pkg?.price || 0) * qty + extraTotal;
+        const deposit = pkg?.deposit || 0;
+        const advance = Number(b.advancePaid) || 0;
+        const amountPaid = Number(b.amountPaid) || 0;
+        const balance = rentTotal + deposit - advance - amountPaid;
+
+        if (pkg?.type === 'jewellery') {
+          // Jewellery Rental Invoice
+          doc.setDrawColor(70, 50, 90);
+          doc.setLineWidth(0.8);
+          doc.rect(8, 8, 194, 282);
+          doc.setDrawColor(70, 50, 90);
+          doc.setLineWidth(0.3);
+          doc.rect(10, 10, 190, 278);
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(24);
+          doc.setTextColor(30, 30, 60);
+          const bizName = settings?.businessName || 'Aarthi Helen\'s';
+          doc.text(bizName.toUpperCase(), 105, 28, { align: 'center' });
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(11);
+          doc.setTextColor(50, 50, 80);
+          doc.text('MAKEOVER & RENTAL JEWELLERY', 105, 36, { align: 'center' });
+
+          doc.setDrawColor(70, 50, 90);
+          doc.setLineWidth(0.3);
+          doc.line(20, 42, 190, 42);
+
+          doc.setFontSize(9);
+          doc.setTextColor(50, 50, 80);
+          const contacts = [];
+          if (settings?.phone) contacts.push(`Mobile: ${settings.phone}`);
+          if (settings?.address) contacts.push(`Address: ${settings.address}`);
+          if (settings?.instagram) contacts.push(`Instagram: ${settings.instagram}`);
+          if (contacts.length === 0) {
+            contacts.push('Mobile: 7539969774');
+            contacts.push('Address: Cithambaram Nagar, Kottar, Nagercoil — 629002');
+            contacts.push('Instagram: aarthihelen_rental_jewellery');
+          }
+          let contactY = 50;
+          contacts.forEach(line => {
+            doc.text(line, 105, contactY, { align: 'center' });
+            contactY += 5;
+          });
+
+          doc.setDrawColor(70, 50, 90);
+          doc.setLineWidth(0.2);
+          for (let x = 20; x < 190; x += 3) {
+            doc.line(x, contactY + 2, x + 1.5, contactY + 2);
+          }
+
+          const formStartY = contactY + 10;
+          doc.setFontSize(10);
+          doc.setTextColor(30, 30, 60);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`No. :  INV-${b.id}`, 20, formStartY);
+          doc.text(`Date :  ${new Date().toLocaleDateString('en-IN')}`, 140, formStartY);
+
+          doc.setFontSize(10);
+          const labelX = 20;
+          const lineX = 60;
+          const lineEnd = 190;
+
+          const drawLabelLine = (label, value, y) => {
+            doc.setFont('helvetica', 'bold');
+            doc.text(label, labelX, y);
+            doc.setFont('helvetica', 'normal');
+            if (value) doc.text(value, lineX, y);
+            doc.setDrawColor(70, 50, 90);
+            doc.setLineWidth(0.2);
+            doc.line(lineX, y + 1, lineEnd, y + 1);
+          };
+
+          let lineY = formStartY + 12;
+          drawLabelLine('Name :', b.clientName, lineY);
+          lineY += 10;
+          drawLabelLine('Address :', b.address || '', lineY);
+          lineY += 8;
+          drawLabelLine('', '', lineY);
+          lineY += 8;
+          drawLabelLine('', '', lineY);
+          lineY += 10;
+          drawLabelLine('Mobile :', b.phone || '', lineY);
+
+          const tableY = lineY + 14;
+          doc.setFillColor(245, 245, 250);
+          doc.rect(20, tableY, 170, 10, 'F');
+          doc.setDrawColor(70, 50, 90);
+          doc.setLineWidth(0.3);
+          doc.rect(20, tableY, 170, 10, 'S');
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(30, 30, 60);
+          doc.text('Particulars', 75, tableY + 7, { align: 'center' });
+          doc.text('Qty.', 140, tableY + 7, { align: 'center' });
+          doc.text('Amount', 170, tableY + 7, { align: 'center' });
+
+          doc.line(130, tableY, 130, tableY + 80);
+          doc.line(150, tableY, 150, tableY + 80);
+          doc.rect(20, tableY, 170, 80, 'S');
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(30, 30, 60);
+
+          let rowY = tableY + 18;
+          doc.text(pkg?.name || 'Jewellery Item', 25, rowY);
+          if (pkg?.description) {
+            const descLines = doc.splitTextToSize(pkg.description, 100);
+            doc.text(descLines, 25, rowY + 7);
+          }
+          doc.text(String(qty), 140, rowY, { align: 'center' });
+          doc.text(`Rs. ${((pkg?.price || 0) * qty).toLocaleString('en-IN')}`, 170, rowY, { align: 'center' });
+
+          extras.forEach((ei, i) => {
+            rowY += 10;
+            doc.text(`+ ${ei.name}`, 25, rowY);
+            doc.text(String(ei.qty || 1), 140, rowY, { align: 'center' });
+            doc.text(`Rs. ${(ei.price * (ei.qty || 1)).toLocaleString('en-IN')}`, 170, rowY, { align: 'center' });
+          });
+
+          const totalsY = tableY + 86;
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(30, 30, 60);
+
+          doc.text('Total Rent  :', 130, totalsY);
+          doc.text(`Rs. ${rentTotal.toLocaleString('en-IN')}`, 185, totalsY, { align: 'center' });
+          doc.text('Deposit     :', 130, totalsY + 8);
+          doc.text(`Rs. ${deposit.toLocaleString('en-IN')}`, 185, totalsY + 8, { align: 'center' });
+          doc.text('Advance     :', 130, totalsY + 16);
+          doc.text(`Rs. ${advance.toLocaleString('en-IN')}`, 185, totalsY + 16, { align: 'center' });
+          doc.text('Paid So Far :', 130, totalsY + 24);
+          doc.text(`Rs. ${amountPaid.toLocaleString('en-IN')}`, 185, totalsY + 24, { align: 'center' });
+          doc.setFontSize(11);
+          doc.text('Balance     :', 130, totalsY + 34);
+          doc.text(`Rs. ${balance.toLocaleString('en-IN')}`, 185, totalsY + 34, { align: 'center' });
+
+          doc.setFontSize(9);
+          doc.setTextColor(100, 100, 120);
+          doc.text('(Deposit to be refunded', 130, totalsY + 40, { align: 'left' });
+          doc.text(`at return = Rs. ${deposit.toLocaleString('en-IN')})`, 130, totalsY + 46, { align: 'left' });
+          doc.setTextColor(30, 30, 60);
+
+          const datesY = totalsY + 54;
+          doc.setDrawColor(70, 50, 90);
+          doc.setLineWidth(0.3);
+          doc.rect(20, datesY, 170, 14, 'S');
+          doc.line(70, datesY, 70, datesY + 14);
+          doc.line(130, datesY, 130, datesY + 14);
+
+          doc.setFontSize(9);
+          doc.text(`Booking Date :  ${b.date || ''}`, 25, datesY + 9);
+          doc.text(`Receiving Date :  ${b.receivingDate || ''}`, 75, datesY + 9);
+          doc.text(`Returning Date :  ${b.returningDate || ''}`, 135, datesY + 9);
+
+          const sigY = datesY + 28;
+          doc.setFontSize(10);
+          doc.text('Customer Signature', 55, sigY + 15, { align: 'center' });
+          doc.text('Authorized Signature', 155, sigY + 15, { align: 'center' });
+
+          doc.setDrawColor(70, 50, 90);
+          doc.setLineWidth(0.2);
+          doc.line(20, sigY, 100, sigY);
+          doc.line(110, sigY, 190, sigY);
+
+          doc.setFontSize(8);
+          doc.setTextColor(80, 80, 100);
+          doc.text('No Exchange & No Cancellation for Rental Booking.', 20, sigY + 28);
+          doc.text('In case of damage / returning jewels later than the mentioned date, charges will be applicable.', 20, sigY + 34);
+
+          try {
+            const blob = doc.output('blob');
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Jewellery-Invoice-${b.clientName}-${b.date}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 3000);
+          } catch (e) {
+            console.error('PDF download error:', e);
+            alert('Invoice generated but could not download. Error: ' + e.message);
+          }
+          return;
+        }
+
+        // Makeup invoice
+        doc.setFillColor(243, 235, 239);
+        doc.rect(0, 0, 210, 40, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(22);
+        doc.setTextColor(primary);
+        doc.text(settings?.businessName || 'Glamour Studio', 105, 22, { align: 'center' });
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(11);
+        doc.setTextColor(secondary);
+        doc.text('Makeup Artist — Invoice', 105, 30, { align: 'center' });
+
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(15, 48, 180, 28, 3, 3, 'F');
+        doc.setDrawColor(232, 217, 224);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(15, 48, 180, 28, 3, 3, 'S');
+
+        doc.setFontSize(10);
+        doc.setTextColor(secondary);
+        doc.text('Invoice #:', 22, 58);
+        doc.text('Date:', 22, 66);
+        doc.setTextColor(primary);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`INV-${b.id}`, 55, 58);
+        doc.text(new Date().toLocaleDateString('en-IN'), 55, 66);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(secondary);
+        doc.text('Booking Date:', 120, 58);
+        doc.text('Status:', 120, 66);
+        doc.setTextColor(primary);
+        doc.setFont('helvetica', 'bold');
+        doc.text(b.date, 155, 58);
+        doc.text(b.status.toUpperCase(), 155, 66);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(primary);
+        doc.text('Billed To', 15, 90);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(secondary);
+        doc.text(b.clientName, 15, 98);
+        if (b.phone) doc.text(b.phone, 15, 104);
+        if (b.email) doc.text(b.email, 15, 110);
+
+        const startY = 122;
+        const tableH = 70 + (extras.length * 8);
+        doc.setFillColor(250, 248, 249);
+        doc.rect(15, startY, 180, 10, 'F');
+        doc.setDrawColor(200, 185, 190);
+        doc.setLineWidth(0.3);
+        doc.rect(15, startY, 180, 10, 'S');
+        doc.line(90, startY, 90, startY + tableH);
+        doc.line(145, startY, 145, startY + tableH);
+        doc.rect(15, startY, 180, tableH, 'S');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(primary);
+        doc.text('Item', 22, startY + 7);
+        doc.text('Description', 95, startY + 7);
+        doc.text('Price', 182, startY + 7, { align: 'right' });
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(secondary);
+        doc.setFontSize(10);
+        const pkgName = pkg?.name || 'Custom Package';
+        const pkgDesc = pkg?.description || '-';
+        const pkgPrice = pkg ? `Rs. ${pkg.price.toLocaleString('en-IN')}` : 'Rs. 0';
+
+        let rowY = startY + 22;
+        doc.setTextColor(primary);
+        doc.setFont('helvetica', 'bold');
+        doc.text(pkgName, 22, rowY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(secondary);
+        const splitDesc = doc.splitTextToSize(pkgDesc, 50);
+        doc.text(splitDesc, 95, rowY);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(primary);
+        doc.text(pkgPrice, 190, rowY, { align: 'right' });
+
+        if (extras.length > 0) {
+          rowY += 14;
+          extras.forEach(ei => {
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(secondary);
+            doc.text(`+ ${ei.name} x${ei.qty || 1}`, 22, rowY);
+            doc.text('-', 95, rowY);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(primary);
+            doc.text(`Rs. ${(ei.price * (ei.qty || 1)).toLocaleString('en-IN')}`, 190, rowY, { align: 'right' });
+            rowY += 10;
+          });
+        }
+
+        const totalY = startY + tableH + 6;
+        doc.setDrawColor(232, 217, 224);
+        doc.setLineWidth(0.5);
+        doc.line(120, totalY, 195, totalY);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(primary);
+        const totalMakeup = (pkg?.price || 0) + extraTotal;
+        doc.text('Total', 130, totalY + 8);
+        doc.text(`Rs. ${totalMakeup.toLocaleString('en-IN')}`, 195, totalY + 8, { align: 'right' });
+
+        if (b.paymentStatus) {
+          doc.setFontSize(9);
+          doc.setTextColor(100, 100, 120);
+          doc.text(`Payment: ${PAYMENT_STATUS[b.paymentStatus] || b.paymentStatus} | Paid Rs. ${(b.amountPaid || 0).toLocaleString('en-IN')} via ${b.paidVia || 'cash'}`, 105, totalY + 18, { align: 'center' });
+        }
+
+        doc.setFillColor(243, 235, 239);
+        doc.rect(0, 270, 210, 27, 'F');
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(secondary);
+        doc.text('Thank you for your business!', 105, 278, { align: 'center' });
+        const contactParts = [];
+        if (settings?.phone) contactParts.push(settings.phone);
+        if (settings?.email) contactParts.push(settings.email);
+        if (contactParts.length > 0) {
+          doc.text(contactParts.join('  •  '), 105, 284, { align: 'center' });
+        }
+        doc.text(settings?.businessName || 'Glamour Studio', 105, 290, { align: 'center' });
+
         try {
-          const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          const pdfData = doc.output('datauristring');
           const link = document.createElement('a');
-          link.href = imgData;
-          link.download = `Invoice-${invoiceTitle.replace(/\s+/g, '-')}.jpg`;
+          link.href = pdfData;
+          link.download = `Makeup-Invoice-${b.clientName}-${b.date}.pdf`;
           document.body.appendChild(link);
           link.click();
-          setTimeout(() => document.body.removeChild(link), 100);
-        } catch (err) {
-          console.error('Image error:', err);
-          alert('Could not save image. Please try again.');
-        } finally {
-          setPdfLoading(false);
-        }
-      };
-
-      const handleShareInvoice = async () => {
-        if (pdfLoading) return;
-        setPdfLoading(true);
-        const el = document.getElementById('invoice-pdf-content');
-        if (!el || !window.html2canvas) {
-          alert('Image generator loading. Please try again in a few seconds.');
-          setPdfLoading(false);
-          return;
-        }
-        try {
-          const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-          canvas.toBlob(async (blob) => {
-            if (navigator.share && blob) {
-              const file = new File([blob], `Invoice-${invoiceTitle.replace(/\s+/g, '-')}.jpg`, { type: 'image/jpeg' });
-              try {
-                await navigator.share({ files: [file], title: invoiceTitle });
-              } catch (shareErr) {
-                if (shareErr.name !== 'AbortError') {
-                  alert('Share failed. Try Save Image instead.');
-                }
-              }
-            } else {
-              alert('Share not supported on this device. Try Save Image instead.');
-            }
-            setPdfLoading(false);
-          }, 'image/jpeg', 0.95);
-        } catch (err) {
-          console.error('Share error:', err);
-          alert('Could not share. Please try Save Image instead.');
-          setPdfLoading(false);
+          document.body.removeChild(link);
+        } catch (e) {
+          alert('Invoice generated but could not download automatically. Please try again on a desktop browser.');
+          console.error('PDF download error:', e);
         }
       };
 
@@ -2010,8 +2306,7 @@ const generateInvoice = (b) => {
             <div>
               <div id="invoice-pdf-content" dangerouslySetInnerHTML={{ __html: invoiceHtml }} />
               <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-mauve-100" style={{ touchAction: 'manipulation' }}>
-                <button onClick={handleSaveInvoiceImage} className={`w-full py-3 rounded-xl text-lg font-medium ${pdfLoading ? 'bg-slate-400 text-white' : 'btn-primary'}`} style={{ touchAction: 'manipulation', minHeight: '52px' }}>{pdfLoading ? 'Saving...' : 'Save Invoice as Image'}</button>
-                <button onClick={handleShareInvoice} className={`w-full py-3 rounded-xl text-lg font-medium ${pdfLoading ? 'bg-slate-400 text-white' : 'bg-emerald-600 text-white'}`} style={{ touchAction: 'manipulation', minHeight: '52px', background: pdfLoading ? undefined : '#059669' }}>{pdfLoading ? 'Sharing...' : 'Share Invoice on WhatsApp'}</button>
+                <button onClick={downloadInvoicePdf} className="w-full py-3 rounded-xl text-lg font-medium btn-primary" style={{ touchAction: 'manipulation', minHeight: '52px' }}>Download Invoice PDF</button>
                 <button onClick={() => setInvoiceModalOpen(false)} className="w-full py-2.5 rounded-xl text-lg font-medium btn-secondary" style={{ touchAction: 'manipulation', minHeight: '48px' }}>Close</button>
               </div>
             </div>
