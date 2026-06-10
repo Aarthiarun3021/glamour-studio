@@ -1518,6 +1518,82 @@ const generateInvoice = (b) => {
         const amountPaid = Number(b.amountPaid) || 0;
         const balance = rentTotal + deposit - advance - amountPaid;
 
+        const tryDownloadPdf = (pdfDataUri, filename) => {
+          // Method 1: Anchor click (works on desktop Chrome)
+          try {
+            const link = document.createElement('a');
+            link.href = pdfDataUri;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            return true;
+          } catch (e) {
+            console.error('Anchor click failed:', e);
+          }
+
+          // Method 2: Web Share API (works on Android Chrome / modern WebView)
+          if (navigator.share && navigator.canShare) {
+            try {
+              const base64 = pdfDataUri.split(',')[1];
+              const byteCharacters = atob(base64);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: 'application/pdf' });
+              const file = new File([blob], filename, { type: 'application/pdf' });
+
+              if (navigator.canShare({ files: [file] })) {
+                navigator.share({
+                  files: [file],
+                  title: 'Invoice PDF',
+                  text: filename
+                });
+                return true;
+              }
+            } catch (e) {
+              console.error('Web Share API failed:', e);
+            }
+          }
+
+          // Method 3: iframe approach (WebView fallback)
+          try {
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = pdfDataUri;
+            document.body.appendChild(iframe);
+            setTimeout(() => document.body.removeChild(iframe), 3000);
+            return true;
+          } catch (e) {
+            console.error('iframe approach failed:', e);
+          }
+
+          // Method 4: Capacitor native bridge (if available)
+          if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem) {
+            try {
+              const base64 = pdfDataUri.split(',')[1];
+              window.Capacitor.Plugins.Filesystem.writeFile({
+                path: filename,
+                data: base64,
+                directory: 'Documents',
+                recursive: true
+              }).then(() => {
+                alert('Invoice saved to Documents folder!');
+              }).catch(e => {
+                console.error('Capacitor Filesystem failed:', e);
+              });
+              return true;
+            } catch (e) {
+              console.error('Capacitor bridge failed:', e);
+            }
+          }
+
+          return false;
+        };
+
         if (pkg?.type === 'jewellery') {
           // Jewellery Rental Invoice
           doc.setDrawColor(70, 50, 90);
@@ -1687,17 +1763,13 @@ const generateInvoice = (b) => {
           doc.text('In case of damage / returning jewels later than the mentioned date, charges will be applicable.', 20, sigY + 34);
 
           try {
-            const blob = doc.output('blob');
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `Jewellery-Invoice-${b.clientName}-${b.date}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => URL.revokeObjectURL(url), 3000);
+            const pdfDataUri = doc.output('datauristring');
+            const success = tryDownloadPdf(pdfDataUri, `Jewellery-Invoice-${b.clientName}-${b.date}.pdf`);
+            if (!success) {
+              alert('Could not download automatically. Try using Chrome browser or enable file downloads in app settings.');
+            }
           } catch (e) {
-            console.error('PDF download error:', e);
+            console.error('PDF generation error:', e);
             alert('Invoice generated but could not download. Error: ' + e.message);
           }
           return;
@@ -1836,19 +1908,16 @@ const generateInvoice = (b) => {
         doc.text(settings?.businessName || 'Glamour Studio', 105, 290, { align: 'center' });
 
         try {
-          const pdfData = doc.output('datauristring');
-          const link = document.createElement('a');
-          link.href = pdfData;
-          link.download = `Makeup-Invoice-${b.clientName}-${b.date}.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          const pdfDataUri = doc.output('datauristring');
+          const success = tryDownloadPdf(pdfDataUri, `Makeup-Invoice-${b.clientName}-${b.date}.pdf`);
+          if (!success) {
+            alert('Could not download automatically. Try using Chrome browser or enable file downloads in app settings.');
+          }
         } catch (e) {
           alert('Invoice generated but could not download automatically. Please try again on a desktop browser.');
           console.error('PDF download error:', e);
         }
       };
-
       const calendarDays = [];
       for (let i = 0; i < firstDay; i++) calendarDays.push(null);
       for (let i = 1; i <= daysInMonth; i++) {
