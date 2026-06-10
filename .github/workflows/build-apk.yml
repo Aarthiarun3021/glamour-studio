@@ -32,9 +32,9 @@ jobs:
           </resources>
           EOF
 
-      - name: Install Capacitor Filesystem plugin
+      - name: Install Capacitor Filesystem plugin (v5 compatible)
         run: |
-          npm install @capacitor/filesystem
+          npm install @capacitor/filesystem@5.1.4
           npx cap sync
 
       - name: Set up JDK
