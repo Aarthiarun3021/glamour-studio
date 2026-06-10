@@ -13,7 +13,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -1495,41 +1494,61 @@ const generateInvoice = (b) => {
         setInvoiceModalOpen(true);
       };
 
-      const handleDownloadPdf = async () => {
+      const handleSaveInvoiceImage = async () => {
         if (pdfLoading) return;
         setPdfLoading(true);
         const el = document.getElementById('invoice-pdf-content');
-        if (!el || !window.html2canvas || !window.jspdf?.jsPDF) {
-          alert('PDF library loading. Please try again in a moment.');
+        if (!el || !window.html2canvas) {
+          alert('Image generator loading. Please try again in a few seconds.');
           setPdfLoading(false);
           return;
         }
         try {
           const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = pdf.internal.pageSize.getHeight();
-          const imgWidth = canvas.width;
-          const imgHeight = canvas.height;
-          const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-          const scaledWidth = imgWidth * ratio;
-          const scaledHeight = imgHeight * ratio;
-          const x = (pdfWidth - scaledWidth) / 2;
-          const y = 10;
-          pdf.addImage(imgData, 'JPEG', x, y, scaledWidth, scaledHeight);
-          const pdfData = pdf.output('datauristring');
           const link = document.createElement('a');
-          link.href = pdfData;
-          link.download = `Invoice-${invoiceTitle.replace(/\s+/g, '-')}.pdf`;
+          link.href = imgData;
+          link.download = `Invoice-${invoiceTitle.replace(/\s+/g, '-')}.jpg`;
           document.body.appendChild(link);
           link.click();
           setTimeout(() => document.body.removeChild(link), 100);
         } catch (err) {
-          console.error('PDF error:', err);
-          alert('PDF generation failed. Please try again.');
+          console.error('Image error:', err);
+          alert('Could not save image. Please try again.');
         } finally {
+          setPdfLoading(false);
+        }
+      };
+
+      const handleShareInvoice = async () => {
+        if (pdfLoading) return;
+        setPdfLoading(true);
+        const el = document.getElementById('invoice-pdf-content');
+        if (!el || !window.html2canvas) {
+          alert('Image generator loading. Please try again in a few seconds.');
+          setPdfLoading(false);
+          return;
+        }
+        try {
+          const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+          canvas.toBlob(async (blob) => {
+            if (navigator.share && blob) {
+              const file = new File([blob], `Invoice-${invoiceTitle.replace(/\s+/g, '-')}.jpg`, { type: 'image/jpeg' });
+              try {
+                await navigator.share({ files: [file], title: invoiceTitle });
+              } catch (shareErr) {
+                if (shareErr.name !== 'AbortError') {
+                  alert('Share failed. Try Save Image instead.');
+                }
+              }
+            } else {
+              alert('Share not supported on this device. Try Save Image instead.');
+            }
+            setPdfLoading(false);
+          }, 'image/jpeg', 0.95);
+        } catch (err) {
+          console.error('Share error:', err);
+          alert('Could not share. Please try Save Image instead.');
           setPdfLoading(false);
         }
       };
@@ -1990,9 +2009,10 @@ const generateInvoice = (b) => {
           <Modal isOpen={invoiceModalOpen} onClose={() => setInvoiceModalOpen(false)} title={invoiceTitle} size="lg">
             <div>
               <div id="invoice-pdf-content" dangerouslySetInnerHTML={{ __html: invoiceHtml }} />
-              <div className="flex gap-3 mt-4 pt-4 border-t border-mauve-100" style={{ touchAction: 'manipulation' }}>
-                <button onClick={() => setInvoiceModalOpen(false)} className="flex-1 py-2.5 rounded-xl text-lg font-medium btn-secondary" style={{ touchAction: 'manipulation' }}>Close</button>
-                <button onClick={handleDownloadPdf} className={`flex-1 py-2.5 rounded-xl text-lg font-medium ${pdfLoading ? 'bg-slate-400 text-white' : 'btn-primary'}`} style={{ touchAction: 'manipulation', minHeight: '48px' }}>{pdfLoading ? 'Generating...' : 'Download PDF'}</button>
+              <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-mauve-100" style={{ touchAction: 'manipulation' }}>
+                <button onClick={handleSaveInvoiceImage} className={`w-full py-3 rounded-xl text-lg font-medium ${pdfLoading ? 'bg-slate-400 text-white' : 'btn-primary'}`} style={{ touchAction: 'manipulation', minHeight: '52px' }}>{pdfLoading ? 'Saving...' : 'Save Invoice as Image'}</button>
+                <button onClick={handleShareInvoice} className={`w-full py-3 rounded-xl text-lg font-medium ${pdfLoading ? 'bg-slate-400 text-white' : 'bg-emerald-600 text-white'}`} style={{ touchAction: 'manipulation', minHeight: '52px', background: pdfLoading ? undefined : '#059669' }}>{pdfLoading ? 'Sharing...' : 'Share Invoice on WhatsApp'}</button>
+                <button onClick={() => setInvoiceModalOpen(false)} className="w-full py-2.5 rounded-xl text-lg font-medium btn-secondary" style={{ touchAction: 'manipulation', minHeight: '48px' }}>Close</button>
               </div>
             </div>
           </Modal>
