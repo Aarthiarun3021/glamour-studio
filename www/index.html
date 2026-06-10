@@ -1519,21 +1519,18 @@ const generateInvoice = (b) => {
         const balance = rentTotal + deposit - advance - amountPaid;
 
         const tryDownloadPdf = (pdfDataUri, filename) => {
-          // Method 1: Anchor click (works on desktop Chrome)
+          // Method 1: window.open (most reliable for WebView - opens system PDF viewer)
           try {
-            const link = document.createElement('a');
-            link.href = pdfDataUri;
-            link.download = filename;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            return true;
+            const newWindow = window.open(pdfDataUri, '_blank');
+            if (newWindow) {
+              console.log('PDF opened in new window');
+              return true;
+            }
           } catch (e) {
-            console.error('Anchor click failed:', e);
+            console.error('window.open failed:', e);
           }
 
-          // Method 2: Web Share API (works on Android Chrome / modern WebView)
+          // Method 2: navigator.share (works on modern Android Chrome/WebView)
           if (navigator.share && navigator.canShare) {
             try {
               const base64 = pdfDataUri.split(',')[1];
@@ -1559,7 +1556,21 @@ const generateInvoice = (b) => {
             }
           }
 
-          // Method 3: iframe approach (WebView fallback)
+          // Method 3: anchor click (desktop Chrome fallback)
+          try {
+            const link = document.createElement('a');
+            link.href = pdfDataUri;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            return true;
+          } catch (e) {
+            console.error('Anchor click failed:', e);
+          }
+
+          // Method 4: iframe fallback
           try {
             const iframe = document.createElement('iframe');
             iframe.style.display = 'none';
@@ -1568,33 +1579,15 @@ const generateInvoice = (b) => {
             setTimeout(() => document.body.removeChild(iframe), 3000);
             return true;
           } catch (e) {
-            console.error('iframe approach failed:', e);
-          }
-
-          // Method 4: Capacitor native bridge (if available)
-          if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem) {
-            try {
-              const base64 = pdfDataUri.split(',')[1];
-              window.Capacitor.Plugins.Filesystem.writeFile({
-                path: filename,
-                data: base64,
-                directory: 'Documents',
-                recursive: true
-              }).then(() => {
-                alert('Invoice saved to Documents folder!');
-              }).catch(e => {
-                console.error('Capacitor Filesystem failed:', e);
-              });
-              return true;
-            } catch (e) {
-              console.error('Capacitor bridge failed:', e);
-            }
+            console.error('iframe failed:', e);
           }
 
           return false;
         };
 
-        if (pkg?.type === 'jewellery') {
+
+
+if (pkg?.type === 'jewellery') {
           // Jewellery Rental Invoice
           doc.setDrawColor(70, 50, 90);
           doc.setLineWidth(0.8);
