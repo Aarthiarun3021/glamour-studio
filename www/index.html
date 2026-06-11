@@ -1543,16 +1543,41 @@ const generateInvoice = (b) => {
           doc.text('No Exchange & No Cancellation for Rental Booking.', 20, sigY + 28);
           doc.text('In case of damage / returning jewels later than the mentioned date, charges will be applicable.', 20, sigY + 34);
 
+          const filename = `Jewellery-Invoice-${b.clientName}-${b.date}.pdf`;
           try {
-            const blob = doc.output('blob');
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `Jewellery-Invoice-${b.clientName}-${b.date}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => URL.revokeObjectURL(url), 3000);
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem) {
+              const pdfData = doc.output('datauristring');
+              const base64 = pdfData.split(',')[1];
+              window.Capacitor.Plugins.Filesystem.writeFile({
+                path: filename,
+                data: base64,
+                directory: 'DOCUMENTS',
+                recursive: true
+              }).then(() => {
+                alert('Invoice saved to Documents: ' + filename);
+              }).catch(err => {
+                console.error('Filesystem error:', err);
+                const blob = doc.output('blob');
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(url), 3000);
+              });
+            } else {
+              const blob = doc.output('blob');
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              setTimeout(() => URL.revokeObjectURL(url), 3000);
+            }
           } catch (e) {
             console.error('PDF download error:', e);
             alert('Invoice generated but could not download. Error: ' + e.message);
@@ -1692,14 +1717,41 @@ const generateInvoice = (b) => {
         }
         doc.text(settings?.businessName || 'Glamour Studio', 105, 290, { align: 'center' });
 
+        const filename = `Makeup-Invoice-${b.clientName}-${b.date}.pdf`;
         try {
-          const pdfData = doc.output('datauristring');
-          const link = document.createElement('a');
-          link.href = pdfData;
-          link.download = `Makeup-Invoice-${b.clientName}-${b.date}.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem) {
+            const pdfData = doc.output('datauristring');
+            const base64 = pdfData.split(',')[1];
+            window.Capacitor.Plugins.Filesystem.writeFile({
+              path: filename,
+              data: base64,
+              directory: 'DOCUMENTS',
+              recursive: true
+            }).then(() => {
+              alert('Invoice saved to Documents: ' + filename);
+            }).catch(err => {
+              console.error('Filesystem error:', err);
+              const blob = doc.output('blob');
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              setTimeout(() => URL.revokeObjectURL(url), 3000);
+            });
+          } else {
+            const blob = doc.output('blob');
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 3000);
+          }
         } catch (e) {
           alert('Invoice generated but could not download automatically. Please try again on a desktop browser.');
           console.error('PDF download error:', e);
