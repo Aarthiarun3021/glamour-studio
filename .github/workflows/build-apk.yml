@@ -21,6 +21,17 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Set app name and icon
+        run: |
+          mkdir -p android/app/src/main/res/values
+          cat > android/app/src/main/res/values/strings.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">Aarthi Makeover</string>
+              <string name="title_activity_main">Aarthi Makeover</string>
+          </resources>
+          EOF
+
       - name: Add Android platform
         run: |
           if [ ! -d "android" ]; then
@@ -32,16 +43,11 @@ jobs:
           npm install @capacitor/filesystem@5.1.4
           npx cap sync
 
-      - name: Set app name
+      - name: Set up app icons
         run: |
-          mkdir -p android/app/src/main/res/values
-          cat > android/app/src/main/res/values/strings.xml << 'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <string name="app_name">Aarthi Makeover</string>
-              <string name="title_activity_main">Aarthi Makeover</string>
-          </resources>
-          EOF
+          if [ -f "app-icons.zip" ]; then
+            unzip -o app-icons.zip -d android/app/src/main/res/
+          fi
 
       - name: Set up JDK
         uses: actions/setup-java@v4
